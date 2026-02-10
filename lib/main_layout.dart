@@ -1,36 +1,27 @@
-import 'package:dealtrackuser/sales_manager/dashboard/sales_dashboard.dart';
-import 'package:dealtrackuser/sales_manager/invoices/invoice_home_screen.dart';
-import 'package:dealtrackuser/sales_manager/loi/loi_ack_screen.dart';
-import 'package:dealtrackuser/sales_manager/quotations/quotation_list_sales.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-// import 'admin/clients/client_list_screen.dart';
 import 'core/theme/app_colors.dart';
 import 'core/services/auth_service.dart';
+import '../../../../services/api_service.dart';
 
 // ================= SALES MANAGER =================
+import 'sales_manager/dashboard/sales_dashboard.dart';
 import 'sales_manager/enquiries/sales_enquiry_list_screen.dart';
 import 'sales_manager/clients/client_list_screen.dart';
-// import 'sales_manager/clients/client_list_screen.dart';
-// import 'sales_manager/quotations/quotation_list_sales.dart';
-// import 'sales_manager/loi/loi_ack_screen.dart';
-// import 'sales_manager/invoices/invoice_home_screen.dart';
-// import 'sales_manager/profile/sales_profile_screen.dart';
+import 'sales_manager/quotations/quotation_list_sales.dart';
+import 'sales_manager/loi/loi_ack_screen.dart';
+import 'sales_manager/invoices/invoice_home_screen.dart';
+import 'sales_manager/profile/sales_profile_screen.dart';
 
 // ================= CLIENT =================
 import 'client/enquiries/client_enquiry_list_screen.dart';
-// import 'client/quotations/client_quotation_list_screen.dart';
-// import 'client/payments/client_payment_screen.dart';
-// import 'client/invoices/client_invoice_list_screen.dart';
-// import 'client/notifications/notification_list_screen.dart';
-// import 'client/profile/client_profile_screen.dart';
 
 // ================= AUTH =================
 import 'auth/login/admin_login_screen.dart';
 
 class MainLayout extends StatefulWidget {
-  final String role; // "sales_manager" | "client"
+  final String role; // sales_manager | client
 
   const MainLayout({
     super.key,
@@ -44,16 +35,39 @@ class MainLayout extends StatefulWidget {
 class _MainLayoutState extends State<MainLayout> {
   final FirebaseAuth auth = FirebaseAuth.instance;
 
+  String profileImageUrl = "";
+  bool loadingProfile = true;
+
+  String get uid => auth.currentUser!.uid;
+
+  @override
+  void initState() {
+    super.initState();
+    loadProfileImage();
+  }
+
+  // =====================================================
+  // LOAD PROFILE IMAGE (API)
+  // =====================================================
+
+  Future<void> loadProfileImage() async {
+    if (widget.role != "sales_manager") return;
+
+    try {
+      final res = await ApiService.get('/sales-managers/$uid');
+      profileImageUrl = res['salesManager']?['profileImage'] ?? "";
+    } catch (e) {
+      debugPrint("LOAD PROFILE IMAGE ERROR => $e");
+    } finally {
+      if (mounted) setState(() => loadingProfile = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    // ================= HOME SCREEN =================
-    late final Widget homeScreen;
-
-    if (widget.role == 'sales_manager') {
-      homeScreen = const SalesDashboard();
-    } else {
-      homeScreen = const ClientEnquiryListScreen();
-    }
+    final Widget homeScreen = widget.role == 'sales_manager'
+        ? const SalesDashboard()
+        : const ClientEnquiryListScreen();
 
     return Scaffold(
       drawer: _buildDrawer(),
@@ -61,15 +75,12 @@ class _MainLayoutState extends State<MainLayout> {
       appBar: AppBar(
         backgroundColor: AppColors.navy,
         foregroundColor: Colors.white,
-
-        // ✅ ENSURE DRAWER ICON APPEARS
         leading: Builder(
           builder: (context) => IconButton(
             icon: const Icon(Icons.menu),
             onPressed: () => Scaffold.of(context).openDrawer(),
           ),
         ),
-
         title: Text(
           widget.role == 'sales_manager'
               ? 'Sales Manager'
@@ -82,106 +93,36 @@ class _MainLayoutState extends State<MainLayout> {
   }
 
   // =====================================================
-  // ================= DRAWER ============================
+  // DRAWER
   // =====================================================
 
   Widget _buildDrawer() {
     return Drawer(
       backgroundColor: AppColors.darkBlue,
-      child: Column(
+      child: ListView(
+        padding: EdgeInsets.zero,
         children: [
           _buildProfileHeader(),
 
-          // ================= SALES MANAGER MENU =================
           if (widget.role == 'sales_manager') ...[
-            _menuTile(
-              'DashBoard',
-              // Icons.assignment,
-              //     () => Navigator.pop(context),
-              Icons.people,
-                  () => _push(const SalesDashboard()),
-            ),
-
-            _menuTile(
-              'Clients',
-              Icons.people,
-                  () => _push(const ClientListScreen()),
-            ),
-            _menuTile(
-              'Enquiries',
-              Icons.people,
-                  () => _push(const SalesEnquiryListScreen()),
-            ),
-
-            _menuTile(
-              'Quotations',
-              Icons.description,
-                  () => _push(const QuotationListSales()),
-            ),
-
-            _menuTile(
-              'LOI Approvals',
-              Icons.verified,
-                  () => _push(const LoiAckScreen()),
-            ),
-
-            _menuTile(
-              'Invoices',
-              Icons.receipt_long,
-                  () => _push(const InvoiceHomeScreen()),
-            ),
-
-            // _menuTile(
-            //   'Profile',
-            //   Icons.person,
-            //       () => _push(const SalesProfileScreen()),
-            // ),
-
+            _menuTile('Dashboard', Icons.dashboard,
+                    () => _push(const SalesDashboard())),
+            _menuTile('Clients', Icons.people,
+                    () => _push(const ClientListScreen())),
+            _menuTile('Enquiries', Icons.assignment,
+                    () => _push(const SalesEnquiryListScreen())),
+            _menuTile('Quotations', Icons.description,
+                    () => _push(const QuotationListSales())),
+            _menuTile('LOI Approvals', Icons.verified,
+                    () => _push(const LoiAckScreen())),
+            _menuTile('Invoices', Icons.receipt_long,
+                    () => _push(const InvoiceHomeScreen())),
+            _menuTile('Profile', Icons.person,
+                    () => _push(const SalesProfileScreen())),
           ],
 
-          // ================= CLIENT MENU =================
-          if (widget.role == 'client') ...[
-            _menuTile(
-              'Enquiries',
-              Icons.assignment,
-                  () => Navigator.pop(context),
-            ),
+          const Divider(color: Colors.white24),
 
-            /*
-            FUTURE CLIENT MENU
-            ------------------
-            _menuTile(
-              'Quotations',
-              Icons.description,
-              () => _push(const ClientQuotationListScreen()),
-            ),
-
-            _menuTile(
-              'Payments',
-              Icons.payment,
-              () => _push(const ClientPaymentScreen()),
-            ),
-            _menuTile(
-              'Invoices',
-              Icons.receipt_long,
-              () => _push(const ClientInvoiceListScreen()),
-            ),
-            _menuTile(
-              'Notifications',
-              Icons.notifications,
-              () => _push(NotificationListScreen(userId: uid)),
-            ),
-            _menuTile(
-              'Profile',
-              Icons.person,
-              () => _push(ClientProfileScreen(clientId: uid)),
-            ),
-            */
-          ],
-
-          const Spacer(),
-
-          // ================= LOGOUT =================
           ListTile(
             leading: const Icon(Icons.logout, color: Colors.red),
             title: const Text(
@@ -196,44 +137,52 @@ class _MainLayoutState extends State<MainLayout> {
   }
 
   // =====================================================
-  // ================= PROFILE HEADER ====================
+  // PROFILE HEADER
   // =====================================================
 
   Widget _buildProfileHeader() {
-    final email = auth.currentUser?.email ?? '';
+    ImageProvider? avatar;
+
+    if (profileImageUrl.isNotEmpty) {
+      avatar = NetworkImage(profileImageUrl);
+    }
 
     return DrawerHeader(
       decoration: const BoxDecoration(color: AppColors.navy),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          CircleAvatar(
-            radius: 34,
-            backgroundColor: Colors.white24,
-            child: Icon(
-              widget.role == 'sales_manager'
-                  ? Icons.person
-                  : Icons.business,
-              color: Colors.white,
-              size: 32,
+          GestureDetector(
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const SalesProfileScreen(),
+                ),
+              );
+            },
+            child: CircleAvatar(
+              radius: 40,
+              backgroundImage: avatar,
+              backgroundColor: Colors.transparent,
+              child: avatar == null
+                  ? const Icon(
+                Icons.person,
+                size: 36,
+                color: Colors.white,
+              )
+                  : null,
             ),
           ),
+
           const SizedBox(height: 12),
-          Text(
-            widget.role == 'sales_manager'
-                ? 'Sales Manager'
-                : 'Client',
-            style: const TextStyle(
+
+          const Text(
+            "Sales Manager",
+            style: TextStyle(
               color: Colors.white,
               fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            email,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 12,
             ),
           ),
         ],
@@ -242,11 +191,11 @@ class _MainLayoutState extends State<MainLayout> {
   }
 
   // =====================================================
-  // ================= HELPERS ===========================
+  // HELPERS
   // =====================================================
 
   void _push(Widget page) {
-    Navigator.pop(context); // close drawer
+    Navigator.pop(context);
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => page),

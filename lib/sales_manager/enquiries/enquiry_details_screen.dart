@@ -390,11 +390,12 @@
 //   }
 // }
 //
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_colors.dart';
-import 'services/services.dart';
+import 'services/enquiry_service.dart';
 
 class EnquiryDetailsScreen extends StatefulWidget {
   final String enquiryId;
@@ -411,7 +412,9 @@ class EnquiryDetailsScreen extends StatefulWidget {
 
 class _EnquiryDetailsScreenState extends State<EnquiryDetailsScreen> {
   bool loading = true;
+
   Map<String, dynamic>? enquiry;
+  Map<String, dynamic>? product;
 
   @override
   void initState() {
@@ -419,16 +422,27 @@ class _EnquiryDetailsScreenState extends State<EnquiryDetailsScreen> {
     loadDetails();
   }
 
+  // ===============================
+  // LOAD DATA (API)
+  // ===============================
+
   Future<void> loadDetails() async {
     try {
-      enquiry =
-      await EnquiryService().getEnquiryDetails(widget.enquiryId);
+      final data = await EnquiryService()
+          .getEnquiryWithProduct(widget.enquiryId);
+
+      enquiry = data;
+      product = data['product'];
     } catch (e) {
       debugPrint("Enquiry Details Error => $e");
     } finally {
       if (mounted) setState(() => loading = false);
     }
   }
+
+  // ===============================
+  // UI
+  // ===============================
 
   @override
   Widget build(BuildContext context) {
@@ -457,11 +471,13 @@ class _EnquiryDetailsScreenState extends State<EnquiryDetailsScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
+            // ================= ENQUIRY INFO =================
             buildSection(
               title: "Enquiry Information",
               icon: Icons.assignment,
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment:
+                CrossAxisAlignment.start,
                 children: [
                   infoRow("Title", enquiry!['title']),
                   infoRow(
@@ -469,13 +485,15 @@ class _EnquiryDetailsScreenState extends State<EnquiryDetailsScreen> {
                       enquiry!['description']),
                   infoRow(
                       "Quantity",
-                      enquiry!['quantity']?.toString()),
+                      enquiry!['quantity']
+                          ?.toString()),
                   infoRow("Source", enquiry!['source']),
                   infoRow("Status", enquiry!['status']),
                   if (createdAt != null)
                     infoRow(
                       "Created At",
-                      DateFormat.yMMMd().format(createdAt),
+                      DateFormat.yMMMd()
+                          .format(createdAt),
                     ),
                   if (expectedDate != null)
                     infoRow(
@@ -486,13 +504,54 @@ class _EnquiryDetailsScreenState extends State<EnquiryDetailsScreen> {
                 ],
               ),
             ),
+
+            const SizedBox(height: 16),
+
+            // ================= PRODUCT INFO =================
+            if (product != null)
+              buildSection(
+                title: "Product Information",
+                icon: Icons.inventory,
+                child: Column(
+                  crossAxisAlignment:
+                  CrossAxisAlignment.start,
+                  children: [
+                    infoRow(
+                        "Product Name",
+                        product!['title']),
+                    infoRow(
+                        "Item No",
+                        product!['item_no']
+                            ?.toString()),
+                    infoRow(
+                        "Size",
+                        product!['size']
+                            ?.toString()),
+                    // infoRow(
+                    //   "Base Price",
+                    //   product!['pricing']
+                    //   ?['basePrice'] !=
+                    //       null
+                    //       ? "₹ ${product!['pricing']['basePrice']}"
+                    //       : "-",
+                    // ),
+                    infoRow(
+                      "Stock",
+                      product!['stock']
+                          ?.toString(),
+                    ),
+                  ],
+                ),
+              ),
           ],
         ),
       ),
     );
   }
 
-  // ================= HELPERS =================
+  // ===============================
+  // UI HELPERS
+  // ===============================
 
   Widget buildSection({
     required String title,
@@ -552,3 +611,4 @@ class _EnquiryDetailsScreenState extends State<EnquiryDetailsScreen> {
     );
   }
 }
+

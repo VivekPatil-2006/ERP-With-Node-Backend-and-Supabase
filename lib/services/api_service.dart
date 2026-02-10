@@ -4,8 +4,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 
 class ApiService {
   // 🔁 Change this when deploying
-  //static const String baseUrl = "https://j3rpjd6r-8000.inc1.devtunnels.ms/api";
-  static const String baseUrl = "http://10.227.156.212:8000/api";
+  static const String baseUrl = "https://j3rpjd6r-8000.inc1.devtunnels.ms/api";
+  //static const String baseUrl = "http://10.227.156.212:8000/api";
 
   /* =======================================================
      🔐 Get Firebase ID Token (PRIVATE ROUTES)

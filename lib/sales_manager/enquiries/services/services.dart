@@ -39,6 +39,9 @@ class EnquiryService {
       'status': e['status'],
       'createdAt': e['created_at'],
       'expectedDate': e['expected_date'],
+
+      // ✅ ADD PRODUCT
+      'product': e['product'], // full product object
     };
   }
 
