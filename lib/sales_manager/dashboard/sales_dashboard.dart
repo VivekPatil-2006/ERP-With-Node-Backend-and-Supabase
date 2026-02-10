@@ -964,36 +964,486 @@
 //
 //
 // }
+
 import 'package:flutter/material.dart';
+import 'package:fl_chart/fl_chart.dart';
+import 'package:intl/intl.dart';
+
 import '../../core/theme/app_colors.dart';
 
-class SalesDashboard extends StatelessWidget {
+class SalesDashboard extends StatefulWidget {
   const SalesDashboard({super.key});
 
   @override
+  State<SalesDashboard> createState() => _SalesDashboardState();
+}
+
+class _SalesDashboardState extends State<SalesDashboard> {
+  bool loading = true;
+
+  int totalInvoices = 12;
+  int paidInvoices = 8;
+  int unpaidInvoices = 4;
+
+  double invoiceTotal = 480000;
+  double paymentReceived = 320000;
+  double paymentPending = 160000;
+
+  double targetSales = 600000;
+  double achievedSales = 420000;
+
+  double targetReceipt = 480000;
+  double achievedReceipt = 320000;
+  double pendingReceipt = 160000;
+
+  List<Map<String, dynamic>> recentInvoices = [];
+  Map<String, double> monthlyTotals = {};
+
+  Map<String, int> enquirySourceCount = {
+    "by phone": 4,
+    "by reference": 2,
+    "by email": 3,
+    "by walkin": 2,
+    "other": 1,
+  };
+
+  @override
+  void initState() {
+    super.initState();
+    loadDashboardData();
+  }
+
+  // =====================================================
+  // LOAD DASHBOARD DATA (SAMPLE)
+  // =====================================================
+
+  Future<void> loadDashboardData() async {
+    await Future.delayed(const Duration(milliseconds: 600));
+
+    monthlyTotals = {
+      "2025-01": 90000,
+      "2025-02": 110000,
+      "2025-03": 140000,
+      "2025-04": 140000,
+    };
+
+    recentInvoices = [
+      {
+        "invoiceNumber": "INV-1001",
+        "amount": 45000,
+        "date": DateTime.now().subtract(const Duration(days: 2)),
+      },
+      {
+        "invoiceNumber": "INV-1002",
+        "amount": 82000,
+        "date": DateTime.now().subtract(const Duration(days: 6)),
+      },
+      {
+        "invoiceNumber": "INV-1003",
+        "amount": 61000,
+        "date": DateTime.now().subtract(const Duration(days: 12)),
+      },
+    ];
+
+    if (mounted) {
+      setState(() => loading = false);
+    }
+  }
+
+  // =====================================================
+  // UI
+  // =====================================================
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: AppColors.darkBlue,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text(
-          '',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
+    if (loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          headerUI(),
+          const SizedBox(height: 20),
+
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Column(
+              children: [
+                GridView.count(
+                  crossAxisCount: 2,
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  mainAxisSpacing: 12,
+                  crossAxisSpacing: 12,
+                  childAspectRatio: 1.3,
+                  children: [
+                    kpiCard("Target Sales",
+                        "₹ ${targetSales.toStringAsFixed(0)}",
+                        Icons.flag),
+                    kpiCard("Achieved Sales",
+                        "₹ ${achievedSales.toStringAsFixed(0)}",
+                        Icons.trending_up),
+                    kpiCard("Total Invoices",
+                        totalInvoices.toString(),
+                        Icons.receipt_long),
+                    kpiCard("Paid Invoices",
+                        paidInvoices.toString(),
+                        Icons.check_circle),
+                    kpiCard("Unpaid Invoices",
+                        unpaidInvoices.toString(),
+                        Icons.pending_actions),
+                    kpiCard("Invoice Total",
+                        "₹ ${invoiceTotal.toStringAsFixed(0)}",
+                        Icons.account_balance),
+                  ],
+                ),
+
+                const SizedBox(height: 25),
+
+                dashboardCard(
+                  title: "Receipt Overview",
+                  child: Column(
+                    children: [
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _receiptMiniCard(
+                              title: "Target Receipt",
+                              value: targetReceipt,
+                              color: Colors.blue,
+                              icon: Icons.account_balance_wallet,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _receiptMiniCard(
+                              title: "Achieved Receipt",
+                              value: achievedReceipt,
+                              color: Colors.green,
+                              icon: Icons.payments,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        height: 200,
+                        child: buildReceiptChart(),
+                      ),
+                    ],
+                  ),
+                ),
+
+                const SizedBox(height: 25),
+
+                dashboardCard(
+                  title: "Monthly Revenue Trend",
+                  child: SizedBox(
+                    height: 220,
+                    child: buildLineChart(),
+                  ),
+                ),
+
+                const SizedBox(height: 25),
+
+                dashboardCard(
+                  title: "Source of Enquiry Analysis",
+                  child: buildEnquirySourceChart(),
+                ),
+
+                const SizedBox(height: 25),
+
+                dashboardCard(
+                  title: "Recent Invoices",
+                  child: Column(
+                    children: recentInvoices.map((inv) {
+                      final date = inv['date'] as DateTime;
+                      return ListTile(
+                        dense: true,
+                        leading: CircleAvatar(
+                          backgroundColor: AppColors.primaryBlue,
+                          child: const Icon(Icons.receipt,
+                              size: 18, color: Colors.white),
+                        ),
+                        title: Text(inv['invoiceNumber']),
+                        subtitle:
+                        Text(DateFormat.yMMMd().format(date)),
+                        trailing: Text(
+                          "₹ ${inv['amount']}",
+                          style: const TextStyle(
+                              fontWeight: FontWeight.bold),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
+            ),
           ),
+        ],
+      ),
+    );
+  }
+
+  // =====================================================
+  // CHARTS
+  // =====================================================
+
+  Widget buildReceiptChart() {
+    return BarChart(
+      BarChartData(
+        maxY: targetReceipt * 1.2,
+        barGroups: [
+          BarChartGroupData(
+            x: 0,
+            barRods: [
+              BarChartRodData(
+                toY: achievedReceipt + pendingReceipt,
+                width: 28,
+                color: Colors.blue,
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ],
+          ),
+          BarChartGroupData(
+            x: 1,
+            barRods: [
+              BarChartRodData(
+                toY: achievedReceipt,
+                width: 28,
+                color: Colors.orange,
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ],
+          ),
+          BarChartGroupData(
+            x: 2,
+            barRods: [
+              BarChartRodData(
+                toY: pendingReceipt,
+                width: 28,
+                color: Colors.green,
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildLineChart() {
+    final keys = monthlyTotals.keys.toList()..sort();
+    final spots = <FlSpot>[];
+
+    for (int i = 0; i < keys.length; i++) {
+      spots.add(
+        FlSpot(i.toDouble(), monthlyTotals[keys[i]]!),
+      );
+    }
+
+    final maxY =
+    monthlyTotals.values.reduce((a, b) => a > b ? a : b);
+
+    return LineChart(
+      LineChartData(
+        minY: 0,
+        maxY: maxY + (maxY * 0.2),
+        lineBarsData: [
+          LineChartBarData(
+            spots: spots,
+            isCurved: true,
+            barWidth: 3,
+            color: AppColors.primaryBlue,
+            dotData: FlDotData(show: true),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget buildEnquirySourceChart() {
+    final total =
+    enquirySourceCount.values.fold(0, (a, b) => a + b);
+
+    final colors = {
+      "by phone": Colors.blue,
+      "by reference": Colors.green,
+      "by email": Colors.orange,
+      "by walkin": Colors.purple,
+      "other": Colors.grey,
+    };
+
+    return Column(
+      children: [
+        SizedBox(
+          height: 220,
+          child: PieChart(
+            PieChartData(
+              centerSpaceRadius: 40,
+              sections: enquirySourceCount.entries.map((entry) {
+                if (entry.value == 0) {
+                  return PieChartSectionData(value: 0);
+                }
+                return PieChartSectionData(
+                  value: entry.value.toDouble(),
+                  color: colors[entry.key],
+                  radius: 55,
+                  title:
+                  "${((entry.value / total) * 100).toStringAsFixed(0)}%",
+                  titleStyle: const TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.white,
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // =====================================================
+  // UI HELPERS (UNCHANGED)
+  // =====================================================
+
+  Widget headerUI() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      width: double.infinity,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [AppColors.darkBlue, AppColors.primaryBlue],
+        ),
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(22),
+          bottomRight: Radius.circular(22),
         ),
       ),
-
-      body: const Center(
-        child: Text(
-          "Sales DashBoard",
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            "Sales Dashboard",
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 22,
+              fontWeight: FontWeight.bold,
+            ),
           ),
-        ),
+          SizedBox(height: 6),
+          Text(
+            "Revenue and invoice performance",
+            style: TextStyle(color: Colors.white70),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _receiptMiniCard({
+    required String title,
+    required double value,
+    required Color color,
+    required IconData icon,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(title,
+                  style: const TextStyle(
+                      fontSize: 10, fontWeight: FontWeight.w600)),
+              Icon(icon, size: 18, color: color),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            "₹ ${value.toStringAsFixed(0)}",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget kpiCard(String title, String value, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 10,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(title,
+                  style: const TextStyle(
+                      fontSize: 12, fontWeight: FontWeight.w600)),
+              Icon(icon, color: AppColors.primaryBlue),
+            ],
+          ),
+          const Spacer(),
+          Text(value,
+              style: const TextStyle(
+                  fontSize: 22, fontWeight: FontWeight.bold)),
+        ],
+      ),
+    );
+  }
+
+  Widget dashboardCard({
+    required String title,
+    required Widget child,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 8,
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title,
+              style: const TextStyle(fontWeight: FontWeight.bold)),
+          const SizedBox(height: 12),
+          child,
+        ],
       ),
     );
   }
 }
+

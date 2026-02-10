@@ -20,6 +20,16 @@ import 'client/enquiries/client_enquiry_list_screen.dart';
 // ================= AUTH =================
 import 'auth/login/admin_login_screen.dart';
 
+enum SalesPage {
+  dashboard,
+  clients,
+  enquiries,
+  quotations,
+  loi,
+  invoices,
+  profile,
+}
+
 class MainLayout extends StatefulWidget {
   final String role; // sales_manager | client
 
@@ -34,6 +44,8 @@ class MainLayout extends StatefulWidget {
 
 class _MainLayoutState extends State<MainLayout> {
   final FirebaseAuth auth = FirebaseAuth.instance;
+
+  SalesPage currentPage = SalesPage.dashboard;
 
   String profileImageUrl = "";
   bool loadingProfile = true;
@@ -63,12 +75,35 @@ class _MainLayoutState extends State<MainLayout> {
     }
   }
 
+  // =====================================================
+  // BODY SWITCHER (🔥 KEY FIX)
+  // =====================================================
+
+  Widget _buildBody() {
+    if (widget.role == 'client') {
+      return const ClientEnquiryListScreen();
+    }
+
+    switch (currentPage) {
+      case SalesPage.dashboard:
+        return const SalesDashboard();
+      case SalesPage.clients:
+        return const ClientListScreen();
+      case SalesPage.enquiries:
+        return const SalesEnquiryListScreen();
+      case SalesPage.quotations:
+        return const QuotationListSales();
+      case SalesPage.loi:
+        return const LoiAckScreen();
+      case SalesPage.invoices:
+        return const InvoiceHomeScreen();
+      case SalesPage.profile:
+        return const SalesProfileScreen();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final Widget homeScreen = widget.role == 'sales_manager'
-        ? const SalesDashboard()
-        : const ClientEnquiryListScreen();
-
     return Scaffold(
       drawer: _buildDrawer(),
 
@@ -88,7 +123,7 @@ class _MainLayoutState extends State<MainLayout> {
         ),
       ),
 
-      body: homeScreen,
+      body: _buildBody(),
     );
   }
 
@@ -105,20 +140,41 @@ class _MainLayoutState extends State<MainLayout> {
           _buildProfileHeader(),
 
           if (widget.role == 'sales_manager') ...[
-            _menuTile('Dashboard', Icons.dashboard,
-                    () => _push(const SalesDashboard())),
-            _menuTile('Clients', Icons.people,
-                    () => _push(const ClientListScreen())),
-            _menuTile('Enquiries', Icons.assignment,
-                    () => _push(const SalesEnquiryListScreen())),
-            _menuTile('Quotations', Icons.description,
-                    () => _push(const QuotationListSales())),
-            _menuTile('LOI Approvals', Icons.verified,
-                    () => _push(const LoiAckScreen())),
-            _menuTile('Invoices', Icons.receipt_long,
-                    () => _push(const InvoiceHomeScreen())),
-            _menuTile('Profile', Icons.person,
-                    () => _push(const SalesProfileScreen())),
+            _menuTile(
+              'Dashboard',
+              Icons.dashboard,
+                  () => _selectPage(SalesPage.dashboard),
+            ),
+            _menuTile(
+              'Clients',
+              Icons.people,
+                  () => _selectPage(SalesPage.clients),
+            ),
+            _menuTile(
+              'Enquiries',
+              Icons.assignment,
+                  () => _selectPage(SalesPage.enquiries),
+            ),
+            _menuTile(
+              'Quotations',
+              Icons.description,
+                  () => _selectPage(SalesPage.quotations),
+            ),
+            _menuTile(
+              'LOI Approvals',
+              Icons.verified,
+                  () => _selectPage(SalesPage.loi),
+            ),
+            _menuTile(
+              'Invoices',
+              Icons.receipt_long,
+                  () => _selectPage(SalesPage.invoices),
+            ),
+            _menuTile(
+              'Profile',
+              Icons.person,
+                  () => _selectPage(SalesPage.profile),
+            ),
           ],
 
           const Divider(color: Colors.white24),
@@ -153,19 +209,11 @@ class _MainLayoutState extends State<MainLayout> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           GestureDetector(
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => const SalesProfileScreen(),
-                ),
-              );
-            },
+            onTap: () => _selectPage(SalesPage.profile),
             child: CircleAvatar(
               radius: 40,
-              backgroundImage: avatar,
               backgroundColor: Colors.transparent,
+              backgroundImage: avatar,
               child: avatar == null
                   ? const Icon(
                 Icons.person,
@@ -175,9 +223,7 @@ class _MainLayoutState extends State<MainLayout> {
                   : null,
             ),
           ),
-
           const SizedBox(height: 12),
-
           const Text(
             "Sales Manager",
             style: TextStyle(
@@ -194,12 +240,9 @@ class _MainLayoutState extends State<MainLayout> {
   // HELPERS
   // =====================================================
 
-  void _push(Widget page) {
-    Navigator.pop(context);
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => page),
-    );
+  void _selectPage(SalesPage page) {
+    Navigator.pop(context); // close drawer
+    setState(() => currentPage = page);
   }
 
   Future<void> _logout() async {

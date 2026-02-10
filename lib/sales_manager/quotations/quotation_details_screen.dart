@@ -218,7 +218,6 @@ class _QuotationDetailsScreenState
         backgroundColor: AppColors.darkBlue,
         foregroundColor: Colors.white,
       ),
-
       body: loading
           ? const Center(child: CircularProgressIndicator())
           : quotation == null
@@ -226,53 +225,100 @@ class _QuotationDetailsScreenState
           : SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            section("Quotation Info"),
-
-            info("Quotation ID",
-                quotation!['quotationId']),
-            info("Status",
-                quotation!['status']?.toUpperCase()),
-
-            if (createdAt != null)
-              info(
-                "Created At",
-                DateFormat.yMMMd()
-                    .add_jm()
-                    .format(createdAt),
+            // ================= QUOTATION INFO =================
+            buildCard(
+              title: "Quotation Info",
+              child: Column(
+                children: [
+                  infoRow(
+                    "Quotation ID",
+                    quotation!['quotationId'],
+                  ),
+                  infoRow(
+                    "Created At",
+                    createdAt != null
+                        ? DateFormat.yMMMd()
+                        .add_jm()
+                        .format(createdAt)
+                        : "-",
+                  ),
+                  const SizedBox(height: 10),
+                  buildStatusChip(
+                      quotation!['status']),
+                ],
               ),
-
-            const Divider(height: 32),
-
-            section("Pricing Details"),
-
-            info("Base Amount",
-                "₹ ${pricing?['baseAmount']}"),
-            info("Quantity",
-                pricing?['quantity']?.toString()),
-            info(
-              "Discount %",
-              "${pricing?['discountPercent']} %",
-            ),
-            info(
-              "Extra Discount",
-              "₹ ${pricing?['extraDiscount']}",
-            ),
-            info(
-              "CGST %",
-              "${pricing?['cgstPercent']} %",
-            ),
-            info(
-              "SGST %",
-              "${pricing?['sgstPercent']} %",
             ),
 
-            const Divider(height: 24),
+            const SizedBox(height: 16),
 
-            info(
-              "Final Amount",
-              "₹ ${pricing?['totalAmount']}",
+            // ================= PRICING DETAILS =================
+            buildCard(
+              title: "Pricing Breakdown",
+              child: Column(
+                children: [
+                  infoRow(
+                    "Base Amount",
+                    "₹ ${pricing?['baseAmount']}",
+                  ),
+                  infoRow(
+                    "Quantity",
+                    pricing?['quantity']?.toString(),
+                  ),
+                  infoRow(
+                    "Discount %",
+                    "${pricing?['discountPercent']} %",
+                  ),
+                  infoRow(
+                    "Extra Discount",
+                    "₹ ${pricing?['extraDiscount']}",
+                  ),
+                  infoRow(
+                    "CGST %",
+                    "${pricing?['cgstPercent']} %",
+                  ),
+                  infoRow(
+                    "SGST %",
+                    "${pricing?['sgstPercent']} %",
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
+            // ================= FINAL AMOUNT =================
+            Container(
+              padding: const EdgeInsets.all(18),
+              decoration: BoxDecoration(
+                color: AppColors.darkBlue.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(
+                  color:
+                  AppColors.darkBlue.withOpacity(0.3),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment:
+                MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    "Final Amount",
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  Text(
+                    "₹ ${pricing?['totalAmount']}",
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.darkBlue,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ],
         ),
@@ -282,28 +328,47 @@ class _QuotationDetailsScreenState
 
   // ================= UI HELPERS =================
 
-  Widget section(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.bold,
-          color: AppColors.darkBlue,
-        ),
+  Widget buildCard({
+    required String title,
+    required Widget child,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            blurRadius: 6,
+            color: Colors.black.withOpacity(0.05),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: AppColors.darkBlue,
+            ),
+          ),
+          const Divider(),
+          child,
+        ],
       ),
     );
   }
 
-  Widget info(String label, dynamic value) {
+  Widget infoRow(String label, dynamic value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           SizedBox(
-            width: 150,
+            width: 140,
             child: Text(
               "$label:",
               style: const TextStyle(
@@ -315,10 +380,46 @@ class _QuotationDetailsScreenState
           Expanded(
             child: Text(
               value?.toString() ?? "-",
-              style: const TextStyle(fontWeight: FontWeight.w500),
+              style: const TextStyle(
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget buildStatusChip(String? status) {
+    Color bg;
+    Color fg;
+
+    switch (status) {
+      case "approved":
+        bg = Colors.green.withOpacity(0.15);
+        fg = Colors.green;
+        break;
+      case "rejected":
+        bg = Colors.red.withOpacity(0.15);
+        fg = Colors.red;
+        break;
+      default:
+        bg = Colors.orange.withOpacity(0.15);
+        fg = Colors.orange;
+    }
+
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: Chip(
+        label: Text(
+          status?.toUpperCase() ?? "-",
+          style: TextStyle(
+            color: fg,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        backgroundColor: bg,
+        side: BorderSide(color: fg),
       ),
     );
   }
