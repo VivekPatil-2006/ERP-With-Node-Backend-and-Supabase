@@ -2,118 +2,61 @@ import '../../../services/api_service.dart';
 
 class ClientService {
   /* =======================================================
-     🔹 CREATE CLIENT
-     POST /clients
-     ======================================================= */
-  Future<void> createClient({
-    required String companyName,
-
-    String? customerCode,
-    String? einTin,
-    String? vatIdentifier,
-    String? socialSecurityNumber,
-
-    String? contactPerson,
-    String? phoneNo1,
-    String? phoneNo2,
-    String? cellphone,
-    String? faxNo,
-
-    String? street,
-    String? city,
-    String? state,
-    String? postcode,
-    String? country,
-  }) async {
-    await ApiService.post(
-      '/clients',
-      {
-        'companyName': companyName,
-        'customerCode': customerCode,
-        'einTin': einTin,
-        'vatIdentifier': vatIdentifier,
-        'socialSecurityNumber': socialSecurityNumber,
-
-        'contactPerson': contactPerson,
-        'phoneNo1': phoneNo1,
-        'phoneNo2': phoneNo2,
-        'cellphone': cellphone,
-        'faxNo': faxNo,
-
-        'street': street,
-        'city': city,
-        'state': state,
-        'postcode': postcode,
-        'country': country,
-      },
-    );
-  }
-
-  /* =======================================================
-     🔹 GET CLIENT LIST
-     ======================================================= */
-  Future<List<Map<String, dynamic>>> getClients() async {
-    final response = await ApiService.get('/clients');
-    final List list = response['clients'] ?? [];
-
-    return list.map<Map<String, dynamic>>((c) {
-      return {
-        'clientId': c['clientId'] ?? c['id'],
-        'clientName':
-        "${c['firstName'] ?? ''} ${c['lastName'] ?? ''}".trim(),
-        'companyName': c['companyName'],
-        'email': c['email'],
-        'phoneNo1': c['phoneNo1'],
-        'createdAt': c['createdAt'],
-        'profileImage': c['profileImage'],
-      };
-    }).toList();
-  }
-
-  /* =======================================================
      🔹 GET CLIENT BY ID
+     GET /clients/:id
      ======================================================= */
   Future<Map<String, dynamic>> getClientById(String clientId) async {
     final response = await ApiService.get('/clients/$clientId');
-    final c = response['client'];
+
+    final client = response['client']; // ✅ IMPORTANT FIX
 
     return {
-      'clientId': c['clientId'] ?? c['id'],
+      'clientId': client['clientId'],
+      'companyId': client['companyId'],
+      'salesManagerId': client['salesManagerId'],
 
-      // ClientDetails
-      'firstName': c['firstName'],
-      'lastName': c['lastName'],
-      'email': c['email'],
-      'contactPerson': c['contactPerson'],
-      'phoneNo1': c['phoneNo1'],
-      'phoneNo2': c['phoneNo2'],
-      'cellphone': c['cellphone'],
-      'faxNo': c['faxNo'],
-      'profileImage': c['profileImage'],
+      'companyName': client['companyName'],
+      'contactPerson': client['contactPerson'],
 
-      // Client
-      'companyName': c['companyName'],
-      'customerCode': c['customerCode'],
-      'einTin': c['einTin'],
-      'vatIdentifier': c['vatIdentifier'],
-      'socialSecurityNumber': c['socialSecurityNumber'],
+      'firstName': client['firstName'],
+      'lastName': client['lastName'],
 
-      // Address
-      'street': c['street'],
-      'city': c['city'],
-      'state': c['state'],
-      'postcode': c['postcode'],
-      'country': c['country'],
+      'emailAddress': client['emailAddress'] ?? client['email'],
+      'phoneNo1': client['phoneNo1'],
+      'phoneNo2': client['phoneNo2'],
+      'cellphone': client['cellphone'],
+      'faxNo': client['faxNo'],
+
+      'street': client['street'],
+      'city': client['city'],
+      'state': client['state'],
+      'postcode': client['postcode'],
+      'country': client['country'],
+
+      'profileImage': client['profileImage'],
+      'status': client['status'],
+      'createdAt': client['createdAt'],
     };
   }
 
   /* =======================================================
      🔹 UPDATE CLIENT
+     PATCH /clients/:id
      ======================================================= */
   Future<void> updateClient({
     required String clientId,
     required Map<String, dynamic> data,
   }) async {
-    await ApiService.patch('/clients/$clientId', data);
+    // Remove empty fields
+    data.removeWhere(
+          (key, value) => value == null || value.toString().trim().isEmpty,
+    );
+
+    if (data.isEmpty) return;
+
+    await ApiService.patch(
+      '/clients/$clientId',
+      data,
+    );
   }
 }

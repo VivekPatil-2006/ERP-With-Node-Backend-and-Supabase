@@ -4,13 +4,41 @@ class ProductService {
   // ================= LIST PRODUCTS =================
   Future<List<Map<String, dynamic>>> getProducts() async {
     final res = await ApiService.get('/products');
-    return List<Map<String, dynamic>>.from(res['products'] ?? []);
+    final List products = res['products'] ?? [];
+
+    return products.map<Map<String, dynamic>>((p) {
+      final prices = p['prices'] as List? ?? [];
+      final colours = p['colours'] as List? ?? [];
+      final paymentTerms = p['paymentTerms'] as List? ?? [];
+
+      return {
+        ...p,
+
+        // 👇 normalize nested lists for UI
+        'pricing': prices.isNotEmpty ? prices.first : {},
+        'colour': colours.isNotEmpty ? colours.first : {},
+        'paymentTerms': paymentTerms.isNotEmpty ? paymentTerms.first : {},
+      };
+    }).toList();
   }
 
   // ================= PRODUCT BY ID =================
   Future<Map<String, dynamic>> getProductById(String productId) async {
     final res = await ApiService.get('/products/$productId');
-    return res['product'];
+    final product = res['product'];
+
+    final prices = product['prices'] as List? ?? [];
+    final colours = product['colours'] as List? ?? [];
+    final paymentTerms = product['paymentTerms'] as List? ?? [];
+
+    return {
+      ...product,
+
+      // 👇 normalize nested lists for UI
+      'pricing': prices.isNotEmpty ? prices.first : {},
+      'colour': colours.isNotEmpty ? colours.first : {},
+      'paymentTerms': paymentTerms.isNotEmpty ? paymentTerms.first : {},
+    };
   }
 
   // ================= CREATE PRODUCT =================

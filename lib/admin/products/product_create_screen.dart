@@ -115,7 +115,7 @@ class _ProductCreateScreenState extends State<ProductCreateScreen> {
             _card('Delivery Terms', _deliverySheet,
                 subtitle: deliveryMonths == 0
                     ? 'Not set'
-                    : '$deliveryMonths months'),
+                    : '$deliveryMonths days'),
 
             _card('Specifications', _specificationsSheet,
                 subtitle: '${specifications.length} added'),

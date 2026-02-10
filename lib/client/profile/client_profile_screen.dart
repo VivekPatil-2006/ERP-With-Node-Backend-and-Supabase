@@ -105,27 +105,11 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
     try {
       setState(() => saving = true);
 
-      final payload = {
-        // ClientDetails
-        'firstName': controllers['firstName']!.text.trim(),
-        'lastName': controllers['lastName']!.text.trim(),
-        'email': controllers['emailAddress']!.text.trim(),
-        'contactPerson': controllers['contactPerson']!.text.trim(),
-        'phoneNo1': controllers['phoneNo1']!.text.trim(),
-        'phoneNo2': controllers['phoneNo2']!.text.trim(),
-        'cellphone': controllers['cellphone']!.text.trim(),
-        'faxNo': controllers['faxNo']!.text.trim(),
+      final Map<String, dynamic> payload = {};
 
-        // Client
-        'companyName': controllers['companyName']!.text.trim(),
-
-        // Address
-        'street': controllers['street']!.text.trim(),
-        'city': controllers['city']!.text.trim(),
-        'state': controllers['state']!.text.trim(),
-        'postcode': controllers['postcode']!.text.trim(),
-        'country': controllers['country']!.text.trim(),
-      };
+      controllers.forEach((key, controller) {
+        payload[key] = controller.text.trim();
+      });
 
       if (selectedImage != null) {
         final imageUrl = await uploadProfileImage();

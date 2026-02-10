@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_colors.dart';
-import '../../services/api_service.dart';
 import '../../shared/widgets/loading_indicator.dart';
 import 'client_enquiry_details_screen.dart';
+import 'services/services.dart';
 import 'create_client_enquiry_screen.dart';
+
 
 class ClientEnquiryListScreen extends StatefulWidget {
   const ClientEnquiryListScreen({super.key});
@@ -17,6 +18,8 @@ class ClientEnquiryListScreen extends StatefulWidget {
 
 class _ClientEnquiryListScreenState
     extends State<ClientEnquiryListScreen> {
+  final Service _service = Service();
+
   String filterStatus = 'all';
   bool loading = true;
 
@@ -34,17 +37,7 @@ class _ClientEnquiryListScreenState
     setState(() => loading = true);
 
     try {
-      final res = await ApiService.get('/enquiries');
-      final List list = res['enquiries'] ?? [];
-
-      enquiries = list.map<Map<String, dynamic>>((e) {
-        return {
-          'id': e['id'],
-          'title': e['title'],
-          'status': e['status'] ?? 'raised',
-          'createdAt': DateTime.parse(e['createdAt']),
-        };
-      }).toList();
+      enquiries = await _service.getEnquiries();
     } catch (e) {
       enquiries = [];
     }
@@ -128,15 +121,18 @@ class _ClientEnquiryListScreenState
         backgroundColor: AppColors.darkBlue,
         child: const Icon(Icons.add, color: Colors.white),
         onPressed: () async {
-          // await Navigator.push(
-          //   context,
-          //   MaterialPageRoute(
-          //     // builder: (_) => const CreateClientEnquiryScreen(),
-          //   ),
-          // );
-          _loadEnquiries(); // refresh after create
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => const CreateClientEnquiryScreen(),
+            ),
+          );
+
+          // 🔁 Refresh list after coming back
+          _loadEnquiries();
         },
       ),
+
 
       body: Column(
         children: [
@@ -196,21 +192,21 @@ class _ClientEnquiryListScreenState
                 itemBuilder: (context, index) {
                   final e = filtered[index];
                   final status = e['status'];
-                  final createdAt = e['createdAt'];
+                  final createdAt = e['createdAt'] as DateTime;
 
                   return InkWell(
                     borderRadius: BorderRadius.circular(14),
-                    // onTap: () {
-                    //   Navigator.push(
-                    //     context,
-                    //     // MaterialPageRoute(
-                    //     //   builder: (_) =>
-                    //     //       // ClientEnquiryDetailsScreen(
-                    //     //       //   enquiryId: e['id'],
-                    //     //       // ),
-                    //     // ),
-                    //   );
-                    // },
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ClientEnquiryDetailsScreen(
+                            enquiry: e, // 👈 PASS FULL ENQUIRY
+                          ),
+                        ),
+                      );
+                    },
+
                     child: Container(
                       margin:
                       const EdgeInsets.only(bottom: 12),
@@ -249,8 +245,7 @@ class _ClientEnquiryListScreenState
                               CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  e['title'] ??
-                                      'Enquiry',
+                                  e['title'] ?? 'Enquiry',
                                   maxLines: 2,
                                   overflow:
                                   TextOverflow.ellipsis,
