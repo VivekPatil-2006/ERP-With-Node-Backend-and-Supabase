@@ -46,6 +46,72 @@ class SalesManagerDetailScreen extends StatelessWidget {
                 _info('State', m["state"]),
                 _info('Postcode', m["postcode"]),
               ]),
+
+              const SizedBox(height: 16),
+
+              _card('Sales Target', [
+                ListTile(
+                  contentPadding: EdgeInsets.zero,
+                  title: const Text('Monthly Target'),
+                  subtitle: Text("₹ ${m["salesTarget"] ?? 0}"),
+                  trailing: IconButton(
+                    icon: const Icon(Icons.edit, color: AppColors.primaryBlue),
+                    onPressed: () async {
+                      final controller = TextEditingController(
+                        text: (m["salesTarget"] ?? 0).toString(),
+                      );
+
+                      final result = await showDialog(
+                        context: context,
+                        builder: (context) => AlertDialog(
+                          title: const Text("Set Sales Target"),
+                          content: TextField(
+                            controller: controller,
+                            keyboardType: TextInputType.number,
+                            decoration: const InputDecoration(
+                              labelText: "Target Amount",
+                            ),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text("Cancel"),
+                            ),
+                            ElevatedButton(
+                              onPressed: () {
+                                Navigator.pop(context, controller.text);
+                              },
+                              child: const Text("Save"),
+                            ),
+                          ],
+                        ),
+                      );
+
+                      if (result != null) {
+                        final newTarget = int.tryParse(result);
+                        if (newTarget != null) {
+                          await SalesManagerService().updateSalesTarget(
+                            managerId: managerId,
+                            target: newTarget,
+                          );
+
+                          if (context.mounted) {
+                            Navigator.pushReplacement(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) =>
+                                    SalesManagerDetailScreen(managerId: managerId),
+                              ),
+                            );
+                          }
+                        }
+                      }
+                    },
+                  ),
+                ),
+              ]),
+
+
               const SizedBox(height: 16),
               _card('Status', [
                 SwitchListTile(
@@ -72,7 +138,11 @@ class SalesManagerDetailScreen extends StatelessWidget {
                 ),
 
               ]),
+
+
             ],
+
+
           );
         },
       ),

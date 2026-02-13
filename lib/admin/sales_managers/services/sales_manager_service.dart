@@ -84,8 +84,26 @@ class SalesManagerService {
       "state": m["state"],
       "postcode": m["postcode"],
       "status": m["status"],
+      "salesTarget": m["sales_target"] ?? 0,   // ✅ ADD THIS
     };
   }
+
+  /* =======================================================
+   🔹 UPDATE SALES TARGET
+   PATCH /api/sales-managers/:id
+   ======================================================= */
+  Future<void> updateSalesTarget({
+    required String managerId,
+    required int target,
+  }) async {
+    await ApiService.patch(
+      "/sales-managers/$managerId",
+      {
+        "sales_target": target,
+      },
+    );
+  }
+
 
   /* =======================================================
      🔹 ACTIVATE / DEACTIVATE

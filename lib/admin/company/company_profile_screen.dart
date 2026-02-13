@@ -8,15 +8,42 @@ import 'services/company_service.dart';
 import 'company_edit_screen.dart';
 import 'bank_edit_screen.dart';
 
-class CompanyProfileScreen extends StatelessWidget {
+class CompanyProfileScreen extends StatefulWidget {
   const CompanyProfileScreen({super.key});
+
+  @override
+  State<CompanyProfileScreen> createState() =>
+      _CompanyProfileScreenState();
+}
+
+class _CompanyProfileScreenState extends State<CompanyProfileScreen> {
+
+  late Future<Map<String, dynamic>> _companyFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadCompany();
+  }
+
+  void _loadCompany() {
+    _companyFuture = CompanyService().getCompany();
+  }
+
+  Future<void> _refreshAfterEdit(Future<void> navigation) async {
+    await navigation;
+    if (mounted) {
+      setState(() {
+        _loadCompany();
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       drawer: const AdminDrawer(currentRoute: '/companyProfile'),
       backgroundColor: AppColors.lightGrey,
-
       appBar: AppBar(
         title: const Text(
           'Company Profile',
@@ -26,10 +53,10 @@ class CompanyProfileScreen extends StatelessWidget {
         foregroundColor: Colors.white,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-
       body: FutureBuilder<Map<String, dynamic>>(
-        future: CompanyService().getCompany(),
+        future: _companyFuture,
         builder: (context, snapshot) {
+
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const LoadingIndicator(
               message: 'Loading company profile...',
@@ -40,137 +67,166 @@ class CompanyProfileScreen extends StatelessWidget {
             return Center(child: Text(snapshot.error.toString()));
           }
 
-          final data = snapshot.data!;
+          final data = snapshot.data ?? {};
           final bank = data['bankDetails'] ?? {};
 
-          return SingleChildScrollView(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              children: [
-                // 🖼️ COMPANY LOGO HEADER
-                if (data['logoImage'] != null)
-                  Container(
-                    margin: const EdgeInsets.only(bottom: 20),
-                    padding: const EdgeInsets.all(20),
-                    decoration: _cardDecoration(),
-                    child: Center(
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(14),
-                        child: Image.memory(
-                          base64Decode(data['logoImage']),
-                          height: 120,
-                          fit: BoxFit.contain,
+          return RefreshIndicator(
+            onRefresh: () async {
+              setState(() {
+                _loadCompany();
+              });
+            },
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(20),
+              physics: const AlwaysScrollableScrollPhysics(),
+              child: Column(
+                children: [
+
+                  // 🖼️ COMPANY LOGO
+                  if (data['logoImage'] != null &&
+                      data['logoImage'].toString().isNotEmpty)
+                    Container(
+                      margin: const EdgeInsets.only(bottom: 20),
+                      padding: const EdgeInsets.all(20),
+                      decoration: _cardDecoration(),
+                      child: Center(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(14),
+                          child: _buildImage(data['logoImage']),
                         ),
                       ),
                     ),
+
+                  // 🏢 COMPANY INFO
+                  _sectionCard(
+                    title: 'Company Information',
+                    backgroundColor: const Color(0xFFE8FFF1),
+                    onEdit: () {
+                      _refreshAfterEdit(
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                            const CompanyEditScreen(),
+                          ),
+                        ),
+                      );
+                    },
+                    children: [
+                      _infoRow('Company Name', data['companyName']),
+                      _infoRow('TIN / GST', data['companyTIN']),
+                      _infoRow('Website', data['companyWebsite']),
+                      _infoRow('Contact Person', data['contactPerson']),
+                      _infoRow('Contact Email', data['contactEmail']),
+                      _infoRow('Contact Phone', data['contactPhone']),
+                      _infoRow('Address', data['address'], multiline: true),
+                    ],
                   ),
 
-                // 🏢 COMPANY INFO
-                _sectionCard(
-                  title: 'Company Information',
-                  backgroundColor: const Color(0xFFE8FFF1),
-                  onEdit: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const CompanyEditScreen(),
-                      ),
-                    );
-                  },
-                  children: [
-                    _infoRow('Company Name', data['companyName']),
-                    _infoRow('TIN / GST', data['companyTIN']),
-                    _infoRow('Website', data['companyWebsite']),
-                    _infoRow('Contact Person', data['contactPerson']),
-                    _infoRow('Contact Email', data['contactEmail']),
-                    _infoRow('Contact Phone', data['contactPhone']),
-                    _infoRow('Address', data['address'], multiline: true),
-                  ],
-                ),
+                  const SizedBox(height: 20),
 
-                const SizedBox(height: 20),
-
-                // 🏦 BANK INFO
-                _sectionCard(
-                  title: 'Bank Details',
-                  backgroundColor: const Color(0xFFFFEEF2),
-                  onEdit: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => const BankEditScreen(),
-                      ),
-                    );
-                  },
-                  children: [
-                    _infoRow('Bank Name', bank['bankName']),
-                    _infoRow('Branch', bank['branchName']),
-                    _infoRow(
-                        'Account Holder', bank['accountHolderName']),
-                    _infoRow(
-                        'Account Number', bank['bankAccountNumber']),
-                    _infoRow('IFSC Code', bank['ifscCode']),
-                    _infoRow('Account Type', bank['accountType']),
-                    _infoRow('UPI ID', bank['upiId']),
-
-                    const SizedBox(height: 14),
-
-                    // 📷 QR IMAGE
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const SizedBox(
-                          width: 130,
-                          child: Text(
-                            'QR Scanner',
-                            style: TextStyle(color: Colors.grey),
+                  // 🏦 BANK INFO
+                  _sectionCard(
+                    title: 'Bank Details',
+                    backgroundColor: const Color(0xFFFFEEF2),
+                    onEdit: () {
+                      _refreshAfterEdit(
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                            const BankEditScreen(),
                           ),
                         ),
-                        Expanded(
-                          child: bank['scannerImage'] != null
-                              ? Container(
-                            height: 120,
-                            decoration: BoxDecoration(
-                              borderRadius:
-                              BorderRadius.circular(12),
-                              color: AppColors.lightGrey,
+                      );
+                    },
+                    children: [
+                      _infoRow('Bank Name', bank['bankName']),
+                      _infoRow('Branch', bank['branchName']),
+                      _infoRow('Account Holder', bank['accountHolderName']),
+                      _infoRow('Account Number', bank['bankAccountNumber']),
+                      _infoRow('IFSC Code', bank['ifscCode']),
+                      _infoRow('Account Type', bank['accountType']),
+                      _infoRow('UPI ID', bank['upiId']),
+
+                      const SizedBox(height: 14),
+
+                      Row(
+                        crossAxisAlignment:
+                        CrossAxisAlignment.start,
+                        children: [
+                          const SizedBox(
+                            width: 130,
+                            child: Text(
+                              'QR Scanner',
+                              style:
+                              TextStyle(color: Colors.grey),
                             ),
-                            child: ClipRRect(
-                              borderRadius:
-                              BorderRadius.circular(12),
-                              child: Image.memory(
-                                base64Decode(
+                          ),
+                          Expanded(
+                            child: bank['scannerImage'] != null &&
+                                bank['scannerImage']
+                                    .toString()
+                                    .isNotEmpty
+                                ? Container(
+                              height: 120,
+                              decoration: BoxDecoration(
+                                borderRadius:
+                                BorderRadius.circular(12),
+                                color: AppColors.lightGrey,
+                              ),
+                              child: ClipRRect(
+                                borderRadius:
+                                BorderRadius.circular(12),
+                                child: _buildImage(
                                     bank['scannerImage']),
-                                fit: BoxFit.contain,
                               ),
-                            ),
-                          )
-                              : Container(
-                            height: 120,
-                            decoration: BoxDecoration(
-                              borderRadius:
-                              BorderRadius.circular(12),
-                              color: AppColors.lightGrey,
-                            ),
-                            child: const Center(
-                              child: Text(
-                                'No QR image uploaded',
-                                style:
-                                TextStyle(color: Colors.grey),
+                            )
+                                : Container(
+                              height: 120,
+                              decoration: BoxDecoration(
+                                borderRadius:
+                                BorderRadius.circular(12),
+                                color: AppColors.lightGrey,
+                              ),
+                              child: const Center(
+                                child: Text(
+                                  'No QR image uploaded',
+                                  style: TextStyle(
+                                      color: Colors.grey),
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ],
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           );
         },
       ),
     );
+  }
+
+  // ================= SAFE IMAGE HANDLER =================
+
+  Widget _buildImage(String imageData) {
+    if (imageData.startsWith("http")) {
+      return Image.network(
+        imageData,
+        height: 120,
+        fit: BoxFit.contain,
+      );
+    } else {
+      return Image.memory(
+        base64Decode(imageData),
+        height: 120,
+        fit: BoxFit.contain,
+      );
+    }
   }
 
   // ================= UI HELPERS =================
@@ -198,13 +254,14 @@ class CompanyProfileScreen extends StatelessWidget {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(22),
-      decoration: _cardDecoration().copyWith(color: backgroundColor),
+      decoration:
+      _cardDecoration().copyWith(color: backgroundColor),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // HEADER
           Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            mainAxisAlignment:
+            MainAxisAlignment.spaceBetween,
             children: [
               Text(
                 title,
@@ -219,7 +276,8 @@ class CompanyProfileScreen extends StatelessWidget {
                 icon: const Icon(Icons.edit, size: 18),
                 label: const Text('Edit'),
                 style: TextButton.styleFrom(
-                  foregroundColor: AppColors.primaryBlue,
+                  foregroundColor:
+                  AppColors.primaryBlue,
                 ),
               ),
             ],
@@ -231,27 +289,29 @@ class CompanyProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _infoRow(
-      String label,
-      String? value, {
-        bool multiline = false,
-      }) {
+  Widget _infoRow(String label, String? value,
+      {bool multiline = false}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
         crossAxisAlignment:
-        multiline ? CrossAxisAlignment.start : CrossAxisAlignment.center,
+        multiline
+            ? CrossAxisAlignment.start
+            : CrossAxisAlignment.center,
         children: [
           SizedBox(
             width: 130,
             child: Text(
               label,
-              style: const TextStyle(color: Colors.grey),
+              style:
+              const TextStyle(color: Colors.grey),
             ),
           ),
           Expanded(
             child: Text(
-              (value == null || value.isEmpty) ? '-' : value,
+              (value == null || value.isEmpty)
+                  ? '-'
+                  : value,
               style: const TextStyle(
                 fontWeight: FontWeight.w500,
                 color: AppColors.navy,

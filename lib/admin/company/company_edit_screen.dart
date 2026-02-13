@@ -18,7 +18,6 @@ class CompanyEditScreen extends StatefulWidget {
 class _CompanyEditScreenState extends State<CompanyEditScreen> {
   final _formKey = GlobalKey<FormState>();
 
-  // ───────── Controllers ─────────
   final companyNameCtrl = TextEditingController();
   final tinCtrl = TextEditingController();
   final websiteCtrl = TextEditingController();
@@ -28,7 +27,7 @@ class _CompanyEditScreenState extends State<CompanyEditScreen> {
   final contactPhoneCtrl = TextEditingController();
   final termsCtrl = TextEditingController();
 
-  String? logoBase64;
+  String? logoValue;
   bool isLoading = true;
 
   @override
@@ -37,46 +36,85 @@ class _CompanyEditScreenState extends State<CompanyEditScreen> {
     _loadCompanyData();
   }
 
+  @override
+  void dispose() {
+    companyNameCtrl.dispose();
+    tinCtrl.dispose();
+    websiteCtrl.dispose();
+    addressCtrl.dispose();
+    contactPersonCtrl.dispose();
+    contactEmailCtrl.dispose();
+    contactPhoneCtrl.dispose();
+    termsCtrl.dispose();
+    super.dispose();
+  }
+
   // ================= LOAD =================
+
   Future<void> _loadCompanyData() async {
-    final data = await CompanyService().getCompany();
+    try {
+      final data = await CompanyService().getCompany();
 
-    companyNameCtrl.text = data['companyName'] ?? '';
-    tinCtrl.text = data['companyTIN'] ?? '';
-    websiteCtrl.text = data['companyWebsite'] ?? '';
-    addressCtrl.text = data['address'] ?? '';
-    contactPersonCtrl.text = data['contactPerson'] ?? '';
-    contactEmailCtrl.text = data['contactEmail'] ?? '';
-    contactPhoneCtrl.text = data['contactPhone'] ?? '';
-    termsCtrl.text = data['generalTermsAndConditions'] ?? '';
-    logoBase64 = data['logoImage'];
+      companyNameCtrl.text = data['companyName'] ?? '';
+      tinCtrl.text = data['companyTIN'] ?? '';
+      websiteCtrl.text = data['companyWebsite'] ?? '';
+      addressCtrl.text = data['address'] ?? '';
+      contactPersonCtrl.text = data['contactPerson'] ?? '';
+      contactEmailCtrl.text = data['contactEmail'] ?? '';
+      contactPhoneCtrl.text = data['contactPhone'] ?? '';
+      termsCtrl.text = data['generalTermsAndConditions'] ?? '';
+      logoValue = data['logoImage'];
 
-    setState(() => isLoading = false);
+      setState(() => isLoading = false);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to load company: $e")),
+      );
+      setState(() => isLoading = false);
+    }
   }
 
   // ================= SAVE =================
+
   Future<void> _saveCompany() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => isLoading = true);
+    try {
+      setState(() => isLoading = true);
 
-    await CompanyService().updateCompany({
-      'companyName': companyNameCtrl.text.trim(),
-      'companyTIN': tinCtrl.text.trim(),
-      'companyWebsite': websiteCtrl.text.trim(),
-      'address': addressCtrl.text.trim(),
-      'contactPerson': contactPersonCtrl.text.trim(),
-      'contactEmail': contactEmailCtrl.text.trim(),
-      'contactPhone': contactPhoneCtrl.text.trim(),
-      'generalTermsAndConditions': termsCtrl.text.trim(),
-      'logoImage': logoBase64,
-    });
+      await CompanyService().updateCompany({
+        'companyName': companyNameCtrl.text.trim(),
+        'companyTIN': tinCtrl.text.trim(),
+        'companyWebsite': websiteCtrl.text.trim(),
+        'address': addressCtrl.text.trim(),
+        'contactPerson': contactPersonCtrl.text.trim(),
+        'contactEmail': contactEmailCtrl.text.trim(),
+        'contactPhone': contactPhoneCtrl.text.trim(),
+        'generalTermsAndConditions': termsCtrl.text.trim(),
+        'logoImage': logoValue,
+      });
 
-    if (!mounted) return;
-    Navigator.pop(context);
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Company updated successfully")),
+      );
+
+      Navigator.pop(context, true); // 🔥 Important for real-time refresh
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() => isLoading = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Update failed: $e")),
+      );
+    }
   }
 
   // ================= IMAGE PICKER =================
+
   Future<void> _pickLogo() async {
     final picker = ImagePicker();
     final file = await picker.pickImage(
@@ -88,8 +126,10 @@ class _CompanyEditScreenState extends State<CompanyEditScreen> {
     if (file == null) return;
 
     final bytes = await file.readAsBytes();
-    setState(() => logoBase64 = base64Encode(bytes));
+    setState(() => logoValue = base64Encode(bytes));
   }
+
+  // ================= BUILD =================
 
   @override
   Widget build(BuildContext context) {
@@ -108,7 +148,6 @@ class _CompanyEditScreenState extends State<CompanyEditScreen> {
         ),
         backgroundColor: AppColors.navy,
         foregroundColor: Colors.white,
-        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -116,6 +155,7 @@ class _CompanyEditScreenState extends State<CompanyEditScreen> {
           key: _formKey,
           child: Column(
             children: [
+
               // 🖼️ LOGO SECTION
               GestureDetector(
                 onTap: _pickLogo,
@@ -132,24 +172,34 @@ class _CompanyEditScreenState extends State<CompanyEditScreen> {
                           color: AppColors.lightGrey,
                           borderRadius: BorderRadius.circular(14),
                         ),
-                        child: logoBase64 != null
+                        child: logoValue != null &&
+                            logoValue!.isNotEmpty
                             ? ClipRRect(
-                          borderRadius: BorderRadius.circular(14),
-                          child: Image.memory(
-                            base64Decode(logoBase64!),
+                          borderRadius:
+                          BorderRadius.circular(14),
+                          child: logoValue!
+                              .startsWith("http")
+                              ? Image.network(
+                            logoValue!,
+                            fit: BoxFit.contain,
+                          )
+                              : Image.memory(
+                            base64Decode(logoValue!),
                             fit: BoxFit.contain,
                           ),
                         )
                             : const Icon(
                           Icons.business,
                           size: 48,
-                          color: AppColors.primaryBlue,
+                          color:
+                          AppColors.primaryBlue,
                         ),
                       ),
                       const SizedBox(height: 10),
                       const Text(
                         'Tap to change company logo',
-                        style: TextStyle(color: Colors.grey),
+                        style:
+                        TextStyle(color: Colors.grey),
                       ),
                     ],
                   ),
@@ -158,7 +208,7 @@ class _CompanyEditScreenState extends State<CompanyEditScreen> {
 
               const SizedBox(height: 20),
 
-              // 🏢 COMPANY DETAILS
+              // 🏢 DETAILS
               _sectionCard(
                 title: 'Company Details',
                 children: [
@@ -240,7 +290,8 @@ class _CompanyEditScreenState extends State<CompanyEditScreen> {
       padding: const EdgeInsets.all(22),
       decoration: _cardDecoration(),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+        CrossAxisAlignment.start,
         children: [
           Text(
             title,
@@ -253,7 +304,8 @@ class _CompanyEditScreenState extends State<CompanyEditScreen> {
           const SizedBox(height: 16),
           ...children.map(
                 (e) => Padding(
-              padding: const EdgeInsets.only(bottom: 14),
+              padding:
+              const EdgeInsets.only(bottom: 14),
               child: e,
             ),
           ),

@@ -26,7 +26,7 @@ class _BankEditScreenState extends State<BankEditScreen> {
   final upiCtrl = TextEditingController();
 
   String accountType = 'saving';
-  String? qrBase64;
+  String? qrValue;
 
   bool isLoading = true;
 
@@ -36,43 +36,83 @@ class _BankEditScreenState extends State<BankEditScreen> {
     _loadBankData();
   }
 
-  Future<void> _loadBankData() async {
-    final data = await CompanyService().getCompany();
-    final bank = data['bankDetails'] ?? {};
-
-    bankNameCtrl.text = bank['bankName'] ?? '';
-    branchCtrl.text = bank['branchName'] ?? '';
-    accountHolderCtrl.text = bank['accountHolderName'] ?? '';
-    accountNoCtrl.text = bank['bankAccountNumber'] ?? '';
-    ifscCtrl.text = bank['ifscCode'] ?? '';
-    upiCtrl.text = bank['upiId'] ?? '';
-    accountType = bank['accountType'] ?? 'saving';
-    qrBase64 = bank['scannerImage'];
-
-    setState(() => isLoading = false);
+  @override
+  void dispose() {
+    bankNameCtrl.dispose();
+    branchCtrl.dispose();
+    accountHolderCtrl.dispose();
+    accountNoCtrl.dispose();
+    ifscCtrl.dispose();
+    upiCtrl.dispose();
+    super.dispose();
   }
+
+  // ================= LOAD =================
+
+  Future<void> _loadBankData() async {
+    try {
+      final data = await CompanyService().getCompany();
+      final bank = data['bankDetails'] ?? {};
+
+      bankNameCtrl.text = bank['bankName'] ?? '';
+      branchCtrl.text = bank['branchName'] ?? '';
+      accountHolderCtrl.text = bank['accountHolderName'] ?? '';
+      accountNoCtrl.text = bank['bankAccountNumber'] ?? '';
+      ifscCtrl.text = bank['ifscCode'] ?? '';
+      upiCtrl.text = bank['upiId'] ?? '';
+      accountType = bank['accountType'] ?? 'saving';
+      qrValue = bank['scannerImage'];
+
+      setState(() => isLoading = false);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Failed to load bank details: $e")),
+      );
+      setState(() => isLoading = false);
+    }
+  }
+
+  // ================= SAVE =================
 
   Future<void> _saveBank() async {
     if (!_formKey.currentState!.validate()) return;
 
-    setState(() => isLoading = true);
+    try {
+      setState(() => isLoading = true);
 
-    await CompanyService().updateCompany({
-      'bankDetails': {
-        'bankName': bankNameCtrl.text.trim(),
-        'branchName': branchCtrl.text.trim(),
-        'accountHolderName': accountHolderCtrl.text.trim(),
-        'bankAccountNumber': accountNoCtrl.text.trim(),
-        'ifscCode': ifscCtrl.text.trim(),
-        'upiId': upiCtrl.text.trim(),
-        'accountType': accountType,
-        'scannerImage': qrBase64,
-      },
-    });
+      await CompanyService().updateCompany({
+        'bankDetails': {
+          'bankName': bankNameCtrl.text.trim(),
+          'branchName': branchCtrl.text.trim(),
+          'accountHolderName': accountHolderCtrl.text.trim(),
+          'bankAccountNumber': accountNoCtrl.text.trim(),
+          'ifscCode': ifscCtrl.text.trim(),
+          'upiId': upiCtrl.text.trim(),
+          'accountType': accountType,
+          'scannerImage': qrValue,
+        },
+      });
 
-    if (!mounted) return;
-    Navigator.pop(context);
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Bank details updated successfully")),
+      );
+
+      Navigator.pop(context, true); // 🔥 Important for real-time refresh
+    } catch (e) {
+      if (!mounted) return;
+
+      setState(() => isLoading = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Update failed: $e")),
+      );
+    }
   }
+
+  // ================= IMAGE PICKER =================
 
   Future<void> _pickQr() async {
     final picker = ImagePicker();
@@ -83,9 +123,12 @@ class _BankEditScreenState extends State<BankEditScreen> {
     );
 
     if (file == null) return;
+
     final bytes = await file.readAsBytes();
-    setState(() => qrBase64 = base64Encode(bytes));
+    setState(() => qrValue = base64Encode(bytes));
   }
+
+  // ================= BUILD =================
 
   @override
   Widget build(BuildContext context) {
@@ -101,7 +144,6 @@ class _BankEditScreenState extends State<BankEditScreen> {
         title: const Text('Edit Bank Details'),
         backgroundColor: AppColors.navy,
         foregroundColor: Colors.white,
-        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -109,13 +151,18 @@ class _BankEditScreenState extends State<BankEditScreen> {
           key: _formKey,
           child: Column(
             children: [
+
+              // 🏦 BANK INFO
               _section('Bank Information', [
                 AppTextField(
                   controller: bankNameCtrl,
                   label: 'Bank Name',
                   validator: _required,
                 ),
-                AppTextField(controller: branchCtrl, label: 'Branch Name'),
+                AppTextField(
+                  controller: branchCtrl,
+                  label: 'Branch Name',
+                ),
                 AppTextField(
                   controller: accountHolderCtrl,
                   label: 'Account Holder Name',
@@ -127,27 +174,52 @@ class _BankEditScreenState extends State<BankEditScreen> {
                   keyboardType: TextInputType.number,
                   validator: _required,
                 ),
-                AppTextField(controller: ifscCtrl, label: 'IFSC Code'),
-                AppTextField(controller: upiCtrl, label: 'UPI ID'),
+                AppTextField(
+                  controller: ifscCtrl,
+                  label: 'IFSC Code',
+                ),
+                AppTextField(
+                  controller: upiCtrl,
+                  label: 'UPI ID',
+                ),
                 DropdownButtonFormField<String>(
-                  value: accountType,
-                  decoration: const InputDecoration(labelText: 'Account Type'),
+                  value: ['saving', 'current'].contains(accountType)
+                      ? accountType
+                      : 'saving',
+                  decoration: const InputDecoration(
+                    labelText: 'Account Type',
+                  ),
                   items: const [
-                    DropdownMenuItem(value: 'saving', child: Text('Saving')),
-                    DropdownMenuItem(value: 'current', child: Text('Current')),
+                    DropdownMenuItem(
+                      value: 'saving',
+                      child: Text('Saving'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'current',
+                      child: Text('Current'),
+                    ),
                   ],
-                  onChanged: (v) => setState(() => accountType = v!),
+                  onChanged: (v) {
+                    if (v != null) {
+                      setState(() => accountType = v);
+                    }
+                  },
                 ),
               ]),
+
               const SizedBox(height: 20),
+
+              // 🖼️ QR IMAGE
               _section('QR / Scanner Image', [
                 _imagePickerRow(
                   label: 'UPI QR Code',
-                  base64: qrBase64,
+                  value: qrValue,
                   onPick: _pickQr,
                 ),
               ]),
+
               const SizedBox(height: 30),
+
               AppButton(
                 label: 'Save Bank Details',
                 isLoading: isLoading,
@@ -160,6 +232,8 @@ class _BankEditScreenState extends State<BankEditScreen> {
     );
   }
 
+  // ================= UI HELPERS =================
+
   Widget _section(String title, List<Widget> children) {
     return Container(
       padding: const EdgeInsets.all(22),
@@ -168,15 +242,21 @@ class _BankEditScreenState extends State<BankEditScreen> {
         borderRadius: BorderRadius.circular(18),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+        CrossAxisAlignment.start,
         children: [
-          Text(title,
-              style: const TextStyle(
-                  fontWeight: FontWeight.bold, color: AppColors.navy)),
+          Text(
+            title,
+            style: const TextStyle(
+              fontWeight: FontWeight.bold,
+              color: AppColors.navy,
+            ),
+          ),
           const SizedBox(height: 14),
           ...children.map(
                 (e) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
+              padding:
+              const EdgeInsets.only(bottom: 12),
               child: e,
             ),
           ),
@@ -187,7 +267,7 @@ class _BankEditScreenState extends State<BankEditScreen> {
 
   Widget _imagePickerRow({
     required String label,
-    required String? base64,
+    required String? value,
     required VoidCallback onPick,
   }) {
     return Row(
@@ -200,11 +280,16 @@ class _BankEditScreenState extends State<BankEditScreen> {
               height: 120,
               decoration: BoxDecoration(
                 color: AppColors.lightGrey,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius:
+                BorderRadius.circular(12),
               ),
-              child: base64 != null
-                  ? Image.memory(base64Decode(base64))
-                  : const Center(child: Text('Tap to upload QR')),
+              child: value != null && value.isNotEmpty
+                  ? value.startsWith("http")
+                  ? Image.network(value)
+                  : Image.memory(base64Decode(value))
+                  : const Center(
+                child: Text('Tap to upload QR'),
+              ),
             ),
           ),
         ),
@@ -212,5 +297,6 @@ class _BankEditScreenState extends State<BankEditScreen> {
     );
   }
 
-  String? _required(String? v) => v == null || v.isEmpty ? 'Required' : null;
+  String? _required(String? v) =>
+      v == null || v.isEmpty ? 'Required' : null;
 }

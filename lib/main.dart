@@ -19,18 +19,7 @@ import 'admin/products/product_list_screen.dart';
 import 'admin/products/product_create_screen.dart';
 
 // ================= SALES + CLIENT =================
-// import 'main_layout.dart';
-
-
-
-// ================= SALES =================
-import 'sales_manager/enquiries/sales_enquiry_list_screen.dart';
-
-
-// ================= CLIENT =================
-import 'client/enquiries/client_enquiry_list_screen.dart';
-
-
+import 'main_layout.dart';
 
 // ================= CORE =================
 import 'core/guards/admin_auth_guard.dart';
@@ -100,12 +89,12 @@ class DealTrackApp extends StatelessWidget {
         ),
 
         // ================= SALES MANAGER =================
-        '/sales_manager/enquiries': (_) =>
-        const SalesEnquiryListScreen(),
+        '/salesManagerDashboard': (_) =>
+        const MainLayout(role: 'sales_manager'),
 
         // ================= CLIENT =================
-        '/client/enquiries': (_) =>
-        const ClientEnquiryListScreen(),
+        '/clientDashboard': (_) =>
+        const MainLayout(role: 'client'),
       },
     );
   }
