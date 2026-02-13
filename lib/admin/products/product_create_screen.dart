@@ -4,6 +4,8 @@ import '../../core/theme/app_colors.dart';
 import '../../shared/widgets/app_button.dart';
 import '../../shared/widgets/app_text_field.dart';
 import 'services/product_service.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 
 class ProductCreateScreen extends StatefulWidget {
   const ProductCreateScreen({super.key});
@@ -13,6 +15,9 @@ class ProductCreateScreen extends StatefulWidget {
 }
 
 class _ProductCreateScreenState extends State<ProductCreateScreen> {
+  File? selectedImage;
+  final ImagePicker picker = ImagePicker();
+
   final titleCtrl = TextEditingController();
 
   // ───────── CORE DATA ─────────
@@ -39,38 +44,84 @@ class _ProductCreateScreenState extends State<ProductCreateScreen> {
 
     setState(() => isLoading = true);
 
-    final totalPrice =
-        (pricing['basePrice'] ?? 0) + (tax['sgst'] ?? 0) + (tax['cgst'] ?? 0);
+    try {
+      final totalPrice =
+          (pricing['basePrice'] ?? 0) +
+              (tax['sgst'] ?? 0) +
+              (tax['cgst'] ?? 0);
 
-    final totalPayment =
-        (paymentTerms['advancePaymentPercent'] ?? 0) +
-            (paymentTerms['interimPaymentPercent'] ?? 0) +
-            (paymentTerms['finalPaymentPercent'] ?? 0);
+      final totalPayment =
+          (paymentTerms['advancePaymentPercent'] ?? 0) +
+              (paymentTerms['interimPaymentPercent'] ?? 0) +
+              (paymentTerms['finalPaymentPercent'] ?? 0);
 
-    await ProductService().createProduct({
-      'title': titleCtrl.text.trim(),
-      'itemNo': itemNo,
-      'description': descriptionText,
-      'size': size,
-      'colour': colour,
-      'pricing': {
-        ...pricing,
-        'totalPrice': totalPrice,
-      },
-      'tax': tax,
-      'paymentTerms': {
-        ...paymentTerms,
-        'totalPayment': totalPayment,
-      },
-      'deliveryTerms': deliveryMonths,
-      'specifications': specifications,
-      'discountPercent': discountPercent,
-      'stock': stock,
-    });
+      final res = await ProductService().createProduct(
+        {
+          'title': titleCtrl.text.trim(),
+          'itemNo': itemNo,
+          'description': descriptionText,
+          'size': size,
+          'colour': colour,
+          'pricing': {
+            ...pricing,
+            'totalPrice': totalPrice,
+          },
+          'tax': tax,
+          'paymentTerms': {
+            ...paymentTerms,
+            'totalPayment': totalPayment,
+          },
+          'deliveryTerms': deliveryMonths,
+          'specifications': specifications,
+          'discountPercent': discountPercent,
+          'stock': stock,
+        },
+        selectedImage,
+      );
 
-    if (!mounted) return;
-    Navigator.pop(context);
+      if (!mounted) return;
+
+      setState(() => isLoading = false);
+
+      // ✅ SUCCESS TOAST
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("✅ Product '${res['title']}' created successfully"),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+
+      // ✅ Close screen after short delay
+      Future.delayed(const Duration(milliseconds: 600), () {
+        Navigator.pop(context, true); // return success
+      });
+
+    } catch (e) {
+      setState(() => isLoading = false);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("❌ Failed to create product"),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
+
+
+
+  Future<void> _pickImage() async {
+    final XFile? picked =
+    await picker.pickImage(source: ImageSource.gallery);
+
+    if (picked != null) {
+      setState(() {
+        selectedImage = File(picked.path);
+      });
+    }
+  }
+
 
 
   // ================= UI =================
@@ -97,6 +148,41 @@ class _ProductCreateScreenState extends State<ProductCreateScreen> {
               controller: titleCtrl,
               label: 'Product Title',
             ),
+
+            const SizedBox(height: 20),
+
+            // ================= PRODUCT IMAGE =================
+            GestureDetector(
+              onTap: _pickImage,
+              child: Container(
+                height: 110,
+                width: double.infinity,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: selectedImage != null
+                    ? ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: Image.file(
+                    selectedImage!,
+                    fit: BoxFit.cover,
+                  ),
+                )
+                    : Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: const [
+                    Icon(Icons.image, size: 40, color: AppColors.primaryBlue),
+                    SizedBox(height: 8),
+                    Text(
+                      "Tap to add product image",
+                      style: TextStyle(color: AppColors.navy),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
 
             const SizedBox(height: 20),
 
@@ -132,6 +218,7 @@ class _ProductCreateScreenState extends State<ProductCreateScreen> {
             ),
           ],
         ),
+
       ),
     );
   }

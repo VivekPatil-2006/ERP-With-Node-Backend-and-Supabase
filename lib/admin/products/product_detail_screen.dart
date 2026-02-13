@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../shared/widgets/loading_indicator.dart';
@@ -17,7 +19,6 @@ class ProductDetailScreen extends StatefulWidget {
 }
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
-  // ===== STATE =====
   bool _initialized = false;
 
   bool editProductInfo = false;
@@ -28,6 +29,11 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
   bool editDelivery = false;
   bool editStock = false;
   bool editSpecs = false;
+
+  // ===== IMAGE =====
+  File? selectedImage;
+  String? productImageUrl;
+  final ImagePicker _picker = ImagePicker();
 
   // ===== CONTROLLERS =====
   final _titleCtrl = TextEditingController();
@@ -53,6 +59,17 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
   List<TextEditingController> specNameCtrls = [];
   List<TextEditingController> specValueCtrls = [];
+
+  Future<void> _pickImage() async {
+    final XFile? picked =
+    await _picker.pickImage(source: ImageSource.gallery);
+
+    if (picked != null) {
+      setState(() {
+        selectedImage = File(picked.path);
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -88,7 +105,6 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         backgroundColor: AppColors.navy,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
-
       body: FutureBuilder<Map<String, dynamic>>(
         future: ProductService().getProductById(widget.productId),
         builder: (context, snapshot) {
@@ -105,32 +121,47 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             return const Center(child: Text('Product not found'));
           }
 
-          // ===== INITIALIZE CONTROLLERS ONCE =====
           if (!_initialized) {
+            productImageUrl = data['productImage'];
+
             _titleCtrl.text = data['title'] ?? '';
             _itemNoCtrl.text = data['itemNo'] ?? '';
             _sizeCtrl.text = data['size'] ?? '';
             _descCtrl.text = data['description'] ?? '';
 
+            final pricingList = data['prices'] as List? ?? [];
+            final pricing = pricingList.isNotEmpty ? pricingList.first : {};
+
             _basePriceCtrl.text =
-                data['pricing']?['basePrice']?.toString() ?? '';
+                pricing['basePrice']?.toString() ?? '';
+
             _totalPriceCtrl.text =
-                data['pricing']?['totalPrice']?.toString() ?? '';
+                pricing['totalPrice']?.toString() ?? '';
+
+
+            final colourList = data['colours'] as List? ?? [];
+            final colour = colourList.isNotEmpty ? colourList.first : {};
 
             _colourNameCtrl.text =
-                data['colour']?['colourName'] ?? '';
+                colour['colourName'] ?? '';
+
 
             _sgstCtrl.text =
                 data['tax']?['sgst']?.toString() ?? '';
             _cgstCtrl.text =
                 data['tax']?['cgst']?.toString() ?? '';
 
+            final paymentList = data['paymentTerms'] as List? ?? [];
+            final payment = paymentList.isNotEmpty ? paymentList.first : {};
+
             _advanceCtrl.text =
-                data['paymentTerms']?['advancePaymentPercent']?.toString() ?? '';
+                payment['advancePaymentPercent']?.toString() ?? '';
+
             _interimCtrl.text =
-                data['paymentTerms']?['interimPaymentPercent']?.toString() ?? '';
+                payment['interimPaymentPercent']?.toString() ?? '';
+
             _finalCtrl.text =
-                data['paymentTerms']?['finalPaymentPercent']?.toString() ?? '';
+                payment['finalPaymentPercent']?.toString() ?? '';
 
             _deliveryCtrl.text =
                 data['deliveryTerms']?.toString() ?? '';
@@ -155,6 +186,37 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
             padding: const EdgeInsets.all(20),
             child: Column(
               children: [
+                if (selectedImage != null || productImageUrl != null)
+                  Container(
+                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                          color: AppColors.navy.withOpacity(0.25)),
+                    ),
+                    child: GestureDetector(
+                      onTap: editProductInfo ? _pickImage : null,
+                      child: ClipRRect(
+                        borderRadius: BorderRadius.circular(14),
+                        child: selectedImage != null
+                            ? Image.file(
+                          selectedImage!,
+                          height: 180,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                        )
+                            : Image.network(
+                          productImageUrl!,
+                          height: 180,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                        ),
+                      ),
+                    ),
+                  ),
+
                 _productInfoCard(),
                 const SizedBox(height: 16),
                 _pricingCard(),
@@ -176,125 +238,7 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
     );
   }
 
-  // ================= CARDS =================
-
-  Widget _productInfoCard() {
-    return _card(
-      'Product Information',
-      actions: _editActions(
-        editProductInfo,
-            () => setState(() => editProductInfo = !editProductInfo),
-            () async {
-          await ProductService().updateProduct(widget.productId, {
-            'title': _titleCtrl.text,
-            'itemNo': _itemNoCtrl.text,
-            'size': _sizeCtrl.text,
-            'description': _descCtrl.text,
-          });
-          setState(() => editProductInfo = false);
-        },
-      ),
-      children: [
-        _editableRow('Title', _titleCtrl, editProductInfo),
-        _editableRow('Item No', _itemNoCtrl, editProductInfo),
-        _editableRow('Size', _sizeCtrl, editProductInfo),
-        _editableRow('Description', _descCtrl, editProductInfo, multiline: true),
-      ],
-    );
-  }
-
-  Widget _pricingCard() {
-    return _card(
-      'Pricing',
-      actions: _editActions(
-        editPricing,
-            () => setState(() => editPricing = !editPricing),
-            () async {
-          await ProductService().updateProduct(widget.productId, {
-            'pricing': {
-              'basePrice': double.tryParse(_basePriceCtrl.text) ?? 0,
-              'totalPrice': double.tryParse(_totalPriceCtrl.text) ?? 0,
-            }
-          });
-          setState(() => editPricing = false);
-        },
-      ),
-      children: [
-        _editableRow('Base Price', _basePriceCtrl, editPricing),
-        _editableRow('Total Price', _totalPriceCtrl, editPricing),
-      ],
-    );
-  }
-
-  Widget _taxCard() {
-    return _card(
-      'Tax',
-      actions: _editActions(
-        editTax,
-            () => setState(() => editTax = !editTax),
-            () async {
-          await ProductService().updateProduct(widget.productId, {
-            'tax': {
-              'sgst': double.tryParse(_sgstCtrl.text) ?? 0,
-              'cgst': double.tryParse(_cgstCtrl.text) ?? 0,
-            }
-          });
-          setState(() => editTax = false);
-        },
-      ),
-      children: [
-        _editableRow('SGST', _sgstCtrl, editTax),
-        _editableRow('CGST', _cgstCtrl, editTax),
-      ],
-    );
-  }
-
-  Widget _paymentCard() {
-    return _card(
-      'Payment Terms',
-      actions: _editActions(
-        editPayment,
-            () => setState(() => editPayment = !editPayment),
-            () async {
-          await ProductService().updateProduct(widget.productId, {
-            'paymentTerms': {
-              'advancePaymentPercent':
-              double.tryParse(_advanceCtrl.text) ?? 0,
-              'interimPaymentPercent':
-              double.tryParse(_interimCtrl.text) ?? 0,
-              'finalPaymentPercent':
-              double.tryParse(_finalCtrl.text) ?? 0,
-            }
-          });
-          setState(() => editPayment = false);
-        },
-      ),
-      children: [
-        _editableRow('Advance %', _advanceCtrl, editPayment),
-        _editableRow('Interim %', _interimCtrl, editPayment),
-        _editableRow('Final %', _finalCtrl, editPayment),
-      ],
-    );
-  }
-
-  Widget _deliveryCard() {
-    return _card(
-      'Delivery',
-      actions: _editActions(
-        editDelivery,
-            () => setState(() => editDelivery = !editDelivery),
-            () async {
-          await ProductService().updateProduct(widget.productId, {
-            'deliveryTerms': int.tryParse(_deliveryCtrl.text) ?? 0,
-          });
-          setState(() => editDelivery = false);
-        },
-      ),
-      children: [
-        _editableRow('Delivery (days)', _deliveryCtrl, editDelivery),
-      ],
-    );
-  }
+  // ================= PRODUCT INFO =================
 
   Widget _specificationsCard() {
     return _card(
@@ -310,65 +254,220 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
               'value': specValueCtrls[i].text,
             },
           );
-          await ProductService()
-              .updateProduct(widget.productId, {'specifications': specs});
+
+          await ProductService().updateProduct(
+            widget.productId,
+            {
+              'specifications': specs,
+            },
+            null,
+          );
+
           setState(() => editSpecs = false);
         },
       ),
       children: [
         if (specNameCtrls.isEmpty)
-          const Text('No specifications added',
-              style: TextStyle(color: Colors.grey)),
+          const Text(
+            'No specifications added',
+            style: TextStyle(color: Colors.grey),
+          ),
+
         ...List.generate(specNameCtrls.length, (i) {
-          return Row(
-            children: [
-              Expanded(
-                child: editSpecs
-                    ? TextFormField(
-                  controller: specNameCtrls[i],
-                  decoration: const InputDecoration(labelText: 'Name'),
-                )
-                    : Text(specNameCtrls[i].text),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: editSpecs
-                    ? TextFormField(
-                  controller: specValueCtrls[i],
-                  decoration: const InputDecoration(labelText: 'Value'),
-                )
-                    : Text(specValueCtrls[i].text),
-              ),
-            ],
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              children: [
+                Expanded(
+                  child: editSpecs
+                      ? TextFormField(
+                    controller: specNameCtrls[i],
+                    decoration:
+                    const InputDecoration(labelText: 'Name'),
+                  )
+                      : Text(specNameCtrls[i].text),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: editSpecs
+                      ? TextFormField(
+                    controller: specValueCtrls[i],
+                    decoration:
+                    const InputDecoration(labelText: 'Value'),
+                  )
+                      : Text(specValueCtrls[i].text),
+                ),
+              ],
+            ),
           );
         }),
       ],
     );
   }
 
-  Widget _stockCard() {
+  Widget _productInfoCard() {
     return _card(
-      'Stock & Discount',
+      'Product Information',
       actions: _editActions(
-        editStock,
-            () => setState(() => editStock = !editStock),
+        editProductInfo,
+            () => setState(() => editProductInfo = !editProductInfo),
             () async {
-          await ProductService().updateProduct(widget.productId, {
-            'stock': int.tryParse(_stockCtrl.text) ?? 0,
-            'discountPercent':
-            double.tryParse(_discountCtrl.text) ?? 0,
-          });
-          setState(() => editStock = false);
+          await ProductService().updateProduct(
+            widget.productId,
+            {
+              'title': _titleCtrl.text,
+              'itemNo': _itemNoCtrl.text,
+              'size': _sizeCtrl.text,
+              'description': _descCtrl.text,
+            },
+            selectedImage,
+          );
+
+          selectedImage = null;
+
+          setState(() => editProductInfo = false);
         },
       ),
       children: [
-        _editableRow('Stock', _stockCtrl, editStock),
-        _editableRow('Discount %', _discountCtrl, editStock),
+        _editableRow('Title', _titleCtrl, editProductInfo),
+        _editableRow('Item No', _itemNoCtrl, editProductInfo),
+        _editableRow('Size', _sizeCtrl, editProductInfo),
+        _editableRow('Description', _descCtrl, editProductInfo, multiline: true),
       ],
     );
   }
 
-  // ================= SHARED UI =================
+  // ================= REMAINING CARDS (UNCHANGED UI) =================
+
+  Widget _pricingCard() => _simpleUpdateCard(
+    'Pricing',
+    editPricing,
+        () => setState(() => editPricing = !editPricing),
+        () async {
+      await ProductService().updateProduct(
+        widget.productId,
+        {
+          'pricing': {
+            'basePrice': double.tryParse(_basePriceCtrl.text) ?? 0,
+            'totalPrice': double.tryParse(_totalPriceCtrl.text) ?? 0,
+          }
+        },
+        null,
+      );
+      setState(() => editPricing = false);
+    },
+    [
+      _editableRow('Base Price', _basePriceCtrl, editPricing),
+      _editableRow('Total Price', _totalPriceCtrl, editPricing),
+    ],
+  );
+
+  Widget _taxCard() => _simpleUpdateCard(
+    'Tax',
+    editTax,
+        () => setState(() => editTax = !editTax),
+        () async {
+      await ProductService().updateProduct(
+        widget.productId,
+        {
+          'tax': {
+            'sgst': double.tryParse(_sgstCtrl.text) ?? 0,
+            'cgst': double.tryParse(_cgstCtrl.text) ?? 0,
+          }
+        },
+        null,
+      );
+      setState(() => editTax = false);
+    },
+    [
+      _editableRow('SGST', _sgstCtrl, editTax),
+      _editableRow('CGST', _cgstCtrl, editTax),
+    ],
+  );
+
+  Widget _paymentCard() => _simpleUpdateCard(
+    'Payment Terms',
+    editPayment,
+        () => setState(() => editPayment = !editPayment),
+        () async {
+      await ProductService().updateProduct(
+        widget.productId,
+        {
+          'paymentTerms': {
+            'advancePaymentPercent':
+            double.tryParse(_advanceCtrl.text) ?? 0,
+            'interimPaymentPercent':
+            double.tryParse(_interimCtrl.text) ?? 0,
+            'finalPaymentPercent':
+            double.tryParse(_finalCtrl.text) ?? 0,
+          }
+        },
+        null,
+      );
+      setState(() => editPayment = false);
+    },
+    [
+      _editableRow('Advance %', _advanceCtrl, editPayment),
+      _editableRow('Interim %', _interimCtrl, editPayment),
+      _editableRow('Final %', _finalCtrl, editPayment),
+    ],
+  );
+
+  Widget _deliveryCard() => _simpleUpdateCard(
+    'Delivery',
+    editDelivery,
+        () => setState(() => editDelivery = !editDelivery),
+        () async {
+      await ProductService().updateProduct(
+        widget.productId,
+        {
+          'deliveryTerms': int.tryParse(_deliveryCtrl.text) ?? 0,
+        },
+        null,
+      );
+      setState(() => editDelivery = false);
+    },
+    [
+      _editableRow('Delivery (days)', _deliveryCtrl, editDelivery),
+    ],
+  );
+
+  Widget _stockCard() => _simpleUpdateCard(
+    'Stock & Discount',
+    editStock,
+        () => setState(() => editStock = !editStock),
+        () async {
+      await ProductService().updateProduct(
+        widget.productId,
+        {
+          'stock': int.tryParse(_stockCtrl.text) ?? 0,
+          'discountPercent':
+          double.tryParse(_discountCtrl.text) ?? 0,
+        },
+        null,
+      );
+      setState(() => editStock = false);
+    },
+    [
+      _editableRow('Stock', _stockCtrl, editStock),
+      _editableRow('Discount %', _discountCtrl, editStock),
+    ],
+  );
+
+  // ================= SHARED =================
+
+  Widget _simpleUpdateCard(
+      String title,
+      bool editing,
+      VoidCallback toggle,
+      VoidCallback save,
+      List<Widget> children) {
+    return _card(
+      title,
+      actions: _editActions(editing, toggle, save),
+      children: children,
+    );
+  }
 
   List<Widget> _editActions(
       bool editing, VoidCallback toggle, VoidCallback save) {
@@ -394,19 +493,23 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         borderRadius: BorderRadius.circular(18),
         border: Border.all(color: AppColors.navy.withOpacity(0.25)),
       ),
-      child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(title,
-                style: const TextStyle(
-                    fontWeight: FontWeight.bold, color: AppColors.navy)),
-            if (actions != null) Row(children: actions),
-          ],
-        ),
-        const SizedBox(height: 14),
-        ...children,
-      ]),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(title,
+                  style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.navy)),
+              if (actions != null) Row(children: actions),
+            ],
+          ),
+          const SizedBox(height: 14),
+          ...children,
+        ],
+      ),
     );
   }
 
@@ -422,7 +525,8 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         children: [
           SizedBox(
             width: 150,
-            child: Text(label, style: const TextStyle(color: Colors.grey)),
+            child:
+            Text(label, style: const TextStyle(color: Colors.grey)),
           ),
           Expanded(
             child: edit

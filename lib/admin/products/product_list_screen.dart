@@ -7,8 +7,44 @@ import '../shared/widgets/admin_drawer.dart';
 import 'services/product_service.dart';
 import 'product_detail_screen.dart';
 
-class ProductListScreen extends StatelessWidget {
+class ProductListScreen extends StatefulWidget {
   const ProductListScreen({super.key});
+
+  @override
+  State<ProductListScreen> createState() => _ProductListScreenState();
+}
+
+class _ProductListScreenState extends State<ProductListScreen> {
+  late Future<List<Map<String, dynamic>>> _productsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProducts();
+  }
+
+  void _loadProducts() {
+    _productsFuture = ProductService().getProducts();
+  }
+
+  Future<void> _goToCreateProduct() async {
+    final result = await Navigator.pushNamed(context, '/createProduct');
+
+    // ✅ Refresh list when coming back
+    if (result != null && mounted) {
+      setState(() {
+        _loadProducts();
+      });
+
+      // ✅ Optional success toast
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('✅ Product created successfully'),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -29,13 +65,11 @@ class ProductListScreen extends StatelessWidget {
         backgroundColor: AppColors.primaryBlue,
         foregroundColor: Colors.white,
         child: const Icon(Icons.add),
-        onPressed: () {
-          Navigator.pushNamed(context, '/createProduct');
-        },
+        onPressed: _goToCreateProduct,
       ),
 
       body: FutureBuilder<List<Map<String, dynamic>>>(
-        future: ProductService().getProducts(),
+        future: _productsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const LoadingIndicator(message: 'Loading products...');
@@ -55,34 +89,45 @@ class ProductListScreen extends StatelessWidget {
             );
           }
 
-          return ListView.builder(
-            padding: const EdgeInsets.all(16),
-            itemCount: products.length,
-            itemBuilder: (context, index) {
-              final p = products[index];
-              final pricing = p['pricing'] ?? {};
-
-              return InkWell(
-                borderRadius: BorderRadius.circular(16),
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          ProductDetailScreen(productId: p['id']),
-                    ),
-                  );
-                },
-                child: _ProductCard(
-                  productId: p['id'],
-                  title: p['title'] ?? '',
-                  itemNo: p['itemNo'] ?? '',
-                  price: pricing['totalPrice']?.toString() ?? '0',
-                  stock: p['stock']?.toString() ?? '0',
-                  active: p['active'] ?? false,
-                ),
-              );
+          return RefreshIndicator(
+            onRefresh: () async {
+              setState(() => _loadProducts());
+              await _productsFuture;
             },
+            child: ListView.builder(
+              padding: const EdgeInsets.all(16),
+              itemCount: products.length,
+              itemBuilder: (context, index) {
+                final p = products[index];
+                final pricing = p['pricing'] ?? {};
+
+                return InkWell(
+                  borderRadius: BorderRadius.circular(16),
+                  onTap: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            ProductDetailScreen(productId: p['id']),
+                      ),
+                    );
+
+                    // ✅ Refresh after update/delete
+                    if (result == true && mounted) {
+                      setState(() => _loadProducts());
+                    }
+                  },
+                  child: _ProductCard(
+                    productId: p['id'],
+                    title: p['title'] ?? '',
+                    itemNo: p['itemNo'] ?? '',
+                    price: pricing['totalPrice']?.toString() ?? '0',
+                    stock: p['stock']?.toString() ?? '0',
+                    active: p['active'] ?? false,
+                  ),
+                );
+              },
+            ),
           );
         },
       ),

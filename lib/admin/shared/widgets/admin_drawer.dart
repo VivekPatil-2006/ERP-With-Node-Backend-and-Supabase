@@ -90,9 +90,9 @@ class AdminDrawer extends StatelessWidget {
           _item(context, Icons.dashboard, 'Dashboard', '/adminDashboard'),
           _item(context, Icons.business, 'Company Profile', '/companyProfile'),
           _item(context, Icons.groups, 'Sales Managers', '/salesManagers'),
+          _item(context, Icons.manage_accounts, 'Planning Manager', '/listPlanningManager'),
           _item(context, Icons.people, 'Clients', '/clients'),
           _item(context, Icons.inventory_2, 'Products', '/products'),
-          _item(context, Icons.manage_accounts, 'Planning Manager', '/listPlanningManager'),
 
           const Spacer(),
 

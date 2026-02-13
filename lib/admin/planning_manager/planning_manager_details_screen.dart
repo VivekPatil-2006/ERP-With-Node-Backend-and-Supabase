@@ -17,6 +17,7 @@ class PlanningManagerDetailScreen extends StatelessWidget {
       backgroundColor: AppColors.lightGrey,
       appBar: AppBar(
         backgroundColor: AppColors.navy,
+        iconTheme: const IconThemeData(color: Colors.white),
         title: const Text(
           "Manager Details",
           style: TextStyle(color: Colors.white),

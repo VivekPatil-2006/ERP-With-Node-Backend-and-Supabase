@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 
+import 'admin/planning_manager/planning_manager_list_screen.dart';
 import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
 
@@ -23,6 +24,7 @@ import 'main_layout.dart';
 
 // ================= CORE =================
 import 'core/guards/admin_auth_guard.dart';
+import 'admin/planning_manager/planning_manager_create_screen.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -62,6 +64,13 @@ class DealTrackApp extends StatelessWidget {
         // '/adminDashboard': (_) => const AdminAuthGuard(
         //   child: AdminDashboardScreen(),
         // ),
+        '/listPlanningManager': (_) => const AdminAuthGuard(
+          child: PlanningManagerListScreen(),
+        ),
+
+        '/createPlanningManager': (_) => const AdminAuthGuard(
+          child: PlanningManagerCreateScreen(),
+        ),
 
         '/salesManagers': (_) => const AdminAuthGuard(
           child: SalesManagerListScreen(),
