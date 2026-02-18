@@ -3,10 +3,10 @@ import 'package:intl/intl.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../shared/widgets/loading_indicator.dart';
+import '../shared_widgets/client_drawer.dart';
 import 'client_enquiry_details_screen.dart';
 import 'services/services.dart';
 import 'create_client_enquiry_screen.dart';
-
 
 class ClientEnquiryListScreen extends StatefulWidget {
   const ClientEnquiryListScreen({super.key});
@@ -42,7 +42,9 @@ class _ClientEnquiryListScreenState
       enquiries = [];
     }
 
-    setState(() => loading = false);
+    if (mounted) {
+      setState(() => loading = false);
+    }
   }
 
   // ================= STATUS COLOR =================
@@ -104,8 +106,12 @@ class _ClientEnquiryListScreenState
     return Scaffold(
       backgroundColor: AppColors.lightGrey,
 
-      // ================= APP BAR =================
+      // ================= DRAWER =================
+      drawer: const ClientDrawer(
+        currentRoute: '/clientEnquiries',
+      ),
 
+      // ================= APP BAR =================
       appBar: AppBar(
         backgroundColor: AppColors.darkBlue,
         foregroundColor: Colors.white,
@@ -116,7 +122,6 @@ class _ClientEnquiryListScreenState
       ),
 
       // ================= CREATE BUTTON =================
-
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.darkBlue,
         child: const Icon(Icons.add, color: Colors.white),
@@ -128,18 +133,17 @@ class _ClientEnquiryListScreenState
             ),
           );
 
-          // 🔁 Refresh list after coming back
           _loadEnquiries();
         },
       ),
 
-
+      // ================= BODY =================
       body: Column(
         children: [
           // ================= FILTER BAR =================
-
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             color: Colors.white,
             child: Row(
               children: [
@@ -177,40 +181,44 @@ class _ClientEnquiryListScreenState
           ),
 
           // ================= LIST =================
-
           Expanded(
             child: loading
-                ? const LoadingIndicator(message: 'Loading enquiries...')
+                ? const LoadingIndicator(
+              message: 'Loading enquiries...',
+            )
                 : filtered.isEmpty
                 ? const Center(child: Text('No Enquiries Found'))
                 : RefreshIndicator(
               onRefresh: _loadEnquiries,
               child: ListView.builder(
-                padding:
-                const EdgeInsets.fromLTRB(12, 12, 12, 90),
+                padding: const EdgeInsets.fromLTRB(
+                    12, 12, 12, 90),
                 itemCount: filtered.length,
                 itemBuilder: (context, index) {
                   final e = filtered[index];
                   final status = e['status'];
-                  final createdAt = e['createdAt'] as DateTime;
+                  final createdAt =
+                  e['createdAt'] as DateTime;
 
                   return InkWell(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius:
+                    BorderRadius.circular(14),
                     onTap: () {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (_) => ClientEnquiryDetailsScreen(
-                            enquiry: e, // 👈 PASS FULL ENQUIRY
-                          ),
+                          builder: (_) =>
+                              ClientEnquiryDetailsScreen(
+                                enquiry: e,
+                              ),
                         ),
                       );
                     },
-
                     child: Container(
-                      margin:
-                      const EdgeInsets.only(bottom: 12),
-                      padding: const EdgeInsets.all(14),
+                      margin: const EdgeInsets.only(
+                          bottom: 12),
+                      padding:
+                      const EdgeInsets.all(14),
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius:
@@ -242,34 +250,47 @@ class _ClientEnquiryListScreenState
                           Expanded(
                             child: Column(
                               crossAxisAlignment:
-                              CrossAxisAlignment.start,
+                              CrossAxisAlignment
+                                  .start,
                               children: [
                                 Text(
-                                  e['title'] ?? 'Enquiry',
+                                  e['title'] ??
+                                      'Enquiry',
                                   maxLines: 2,
                                   overflow:
-                                  TextOverflow.ellipsis,
-                                  style: const TextStyle(
+                                  TextOverflow
+                                      .ellipsis,
+                                  style:
+                                  const TextStyle(
                                     fontSize: 15,
                                     fontWeight:
-                                    FontWeight.w600,
+                                    FontWeight
+                                        .w600,
                                   ),
                                 ),
-                                const SizedBox(height: 6),
+                                const SizedBox(
+                                    height: 6),
                                 Row(
                                   children: [
                                     const Icon(
-                                      Icons.calendar_today,
+                                      Icons
+                                          .calendar_today,
                                       size: 13,
-                                      color: Colors.grey,
+                                      color:
+                                      Colors.grey,
                                     ),
-                                    const SizedBox(width: 6),
+                                    const SizedBox(
+                                        width: 6),
                                     Text(
-                                      DateFormat.yMMMd()
-                                          .format(createdAt),
-                                      style: const TextStyle(
+                                      DateFormat
+                                          .yMMMd()
+                                          .format(
+                                          createdAt),
+                                      style:
+                                      const TextStyle(
                                         fontSize: 12,
-                                        color: Colors.grey,
+                                        color:
+                                        Colors.grey,
                                       ),
                                     ),
                                   ],

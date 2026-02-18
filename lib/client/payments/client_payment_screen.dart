@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../core/services/cloudinary_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../shared_widgets/client_drawer.dart';
 import 'services.dart';
 
 class ClientPaymentScreen extends StatefulWidget {
@@ -14,7 +15,8 @@ class ClientPaymentScreen extends StatefulWidget {
       _ClientPaymentScreenState();
 }
 
-class _ClientPaymentScreenState extends State<ClientPaymentScreen> {
+class _ClientPaymentScreenState
+    extends State<ClientPaymentScreen> {
 
   String? selectedInvoiceId;
   Map<String, dynamic>? selectedInvoice;
@@ -84,7 +86,7 @@ class _ClientPaymentScreenState extends State<ClientPaymentScreen> {
         amount: amount,
         clientId: selectedInvoice!['clientId'],
         companyId: selectedInvoice!['companyId'],
-        invoiceId: selectedInvoiceId!, // ✅ SAFE NOW
+        invoiceId: selectedInvoiceId!,
         quotationId: selectedInvoice!['quotationId'],
         paymentMode: paymentMode,
         paymentType: paymentType,
@@ -103,18 +105,23 @@ class _ClientPaymentScreenState extends State<ClientPaymentScreen> {
     }
   }
 
-
   // ================= UI =================
   @override
   Widget build(BuildContext context) {
-
     return Scaffold(
+      backgroundColor: AppColors.lightGrey,
+
+      // ✅ DRAWER ADDED
+      drawer: const ClientDrawer(
+        currentRoute: '/clientPayments',
+      ),
+
       appBar: AppBar(
         backgroundColor: AppColors.darkBlue,
-        iconTheme: const IconThemeData(color: Colors.white),
+        foregroundColor: Colors.white,
         title: const Text(
           "Make Payment",
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(fontWeight: FontWeight.w600),
         ),
       ),
 
@@ -248,7 +255,6 @@ class _ClientPaymentScreenState extends State<ClientPaymentScreen> {
     );
   }
 
-  // ================= DROPDOWNS =================
   Widget buildPhaseDropdown() {
     return DropdownButtonFormField<String>(
       value: phase,
@@ -282,7 +288,6 @@ class _ClientPaymentScreenState extends State<ClientPaymentScreen> {
     );
   }
 
-  // ================= CARD =================
   Widget buildCard({
     required String title,
     required IconData icon,

@@ -4,6 +4,7 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../core/services/cloudinary_service.dart';
 import '../../core/theme/app_colors.dart';
+import '../shared_widgets/client_drawer.dart';
 import 'services/client_services.dart';
 
 class ClientProfileScreen extends StatefulWidget {
@@ -15,10 +16,12 @@ class ClientProfileScreen extends StatefulWidget {
   });
 
   @override
-  State<ClientProfileScreen> createState() => _ClientProfileScreenState();
+  State<ClientProfileScreen> createState() =>
+      _ClientProfileScreenState();
 }
 
-class _ClientProfileScreenState extends State<ClientProfileScreen> {
+class _ClientProfileScreenState
+    extends State<ClientProfileScreen> {
   bool editMode = false;
   bool saving = false;
   bool uploadingImage = false;
@@ -27,10 +30,6 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
 
   final Map<String, TextEditingController> controllers = {};
   bool controllersInitialized = false;
-
-  // ===========================
-  // INIT CONTROLLERS (ONCE)
-  // ===========================
 
   void initControllers(Map<String, dynamic> data) {
     if (controllersInitialized) return;
@@ -60,10 +59,6 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
     controllersInitialized = true;
   }
 
-  // ===========================
-  // PICK IMAGE
-  // ===========================
-
   Future<void> pickProfileImage() async {
     if (!editMode) return;
 
@@ -77,17 +72,13 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
     }
   }
 
-  // ===========================
-  // UPLOAD IMAGE
-  // ===========================
-
   Future<String?> uploadProfileImage() async {
     if (selectedImage == null) return null;
 
     try {
       setState(() => uploadingImage = true);
       return await CloudinaryService().uploadFile(selectedImage!);
-    } catch (e) {
+    } catch (_) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Image upload failed')),
       );
@@ -96,10 +87,6 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
       if (mounted) setState(() => uploadingImage = false);
     }
   }
-
-  // ===========================
-  // SAVE PROFILE (API)
-  // ===========================
 
   Future<void> saveProfile() async {
     try {
@@ -131,7 +118,7 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Profile updated successfully')),
       );
-    } catch (e) {
+    } catch (_) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Failed to update profile')),
       );
@@ -140,13 +127,16 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
     }
   }
 
-  // ===========================
-  // UI
-  // ===========================
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: AppColors.lightGrey,
+
+      // ================= DRAWER =================
+      drawer: const ClientDrawer(
+        currentRoute: '/clientProfile',
+      ),
+
       appBar: AppBar(
         title: const Text(
           'Client Profile',
@@ -167,19 +157,18 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
         ],
       ),
 
-      // ===========================
-      // LOAD CLIENT (API)
-      // ===========================
-
       body: FutureBuilder<Map<String, dynamic>>(
         future: ClientService().getClientById(widget.clientId),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
+          if (snapshot.connectionState ==
+              ConnectionState.waiting) {
+            return const Center(
+                child: CircularProgressIndicator());
           }
 
           if (!snapshot.hasData) {
-            return const Center(child: Text('Client not found'));
+            return const Center(
+                child: Text('Client not found'));
           }
 
           final data = snapshot.data!;
@@ -189,8 +178,6 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                // ================= PROFILE IMAGE =================
-
                 GestureDetector(
                   onTap: pickProfileImage,
                   child: Stack(
@@ -202,16 +189,22 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
                         backgroundImage: selectedImage != null
                             ? FileImage(selectedImage!)
                             : (data['profileImage'] != null &&
-                            data['profileImage'].toString().isNotEmpty)
-                            ? NetworkImage(data['profileImage'])
+                            data['profileImage']
+                                .toString()
+                                .isNotEmpty)
+                            ? NetworkImage(
+                            data['profileImage'])
                             : null,
                         child: selectedImage == null &&
                             (data['profileImage'] == null ||
-                                data['profileImage'].toString().isEmpty)
+                                data['profileImage']
+                                    .toString()
+                                    .isEmpty)
                             ? const Icon(
                           Icons.business,
                           size: 40,
-                          color: AppColors.primaryBlue,
+                          color:
+                          AppColors.primaryBlue,
                         )
                             : null,
                       ),
@@ -221,7 +214,8 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
                           right: 0,
                           child: CircleAvatar(
                             radius: 16,
-                            backgroundColor: AppColors.primaryBlue,
+                            backgroundColor:
+                            AppColors.primaryBlue,
                             child: const Icon(
                               Icons.camera_alt,
                               size: 16,
@@ -231,7 +225,10 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
                         ),
                       if (uploadingImage)
                         const Positioned.fill(
-                          child: Center(child: CircularProgressIndicator()),
+                          child: Center(
+                            child:
+                            CircularProgressIndicator(),
+                          ),
                         ),
                     ],
                   ),
@@ -268,16 +265,19 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
                     child: ElevatedButton(
                       onPressed: saving ? null : saveProfile,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primaryBlue,
+                        backgroundColor:
+                        AppColors.primaryBlue,
                         foregroundColor: Colors.white,
                         padding:
-                        const EdgeInsets.symmetric(vertical: 14),
+                        const EdgeInsets.symmetric(
+                            vertical: 14),
                       ),
                       child: saving
                           ? const SizedBox(
                         height: 18,
                         width: 18,
-                        child: CircularProgressIndicator(
+                        child:
+                        CircularProgressIndicator(
                           strokeWidth: 2,
                           color: Colors.white,
                         ),
@@ -293,10 +293,6 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
     );
   }
 
-  // ===========================
-  // UI HELPERS
-  // ===========================
-
   Widget buildSection(String title, List<Widget> children) {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -306,18 +302,21 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color:
+            Colors.black.withOpacity(0.05),
             blurRadius: 6,
           ),
         ],
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+        CrossAxisAlignment.start,
         children: [
           Text(
             title,
-            style:
-            const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+            style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16),
           ),
           const Divider(),
           ...children,
@@ -328,26 +327,33 @@ class _ClientProfileScreenState extends State<ClientProfileScreen> {
 
   Widget buildField(String label, String key) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 6),
+      padding:
+      const EdgeInsets.symmetric(vertical: 6),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment:
+        CrossAxisAlignment.start,
         children: [
           Text(
             label,
-            style:
-            const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
+            style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 13),
           ),
           const SizedBox(height: 4),
           editMode
               ? TextField(
             controller: controllers[key],
-            decoration: const InputDecoration(
-              border: OutlineInputBorder(),
+            decoration:
+            const InputDecoration(
+              border:
+              OutlineInputBorder(),
               isDense: true,
             ),
           )
               : Text(
-            controllers[key]!.text.isEmpty
+            controllers[key]!
+                .text
+                .isEmpty
                 ? '-'
                 : controllers[key]!.text,
           ),

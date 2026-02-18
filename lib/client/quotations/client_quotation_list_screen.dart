@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../shared_widgets/client_drawer.dart';
 import 'client_quotation_details_screen.dart';
 import 'services/services.dart';
 
@@ -28,6 +29,7 @@ class _ClientQuotationListScreenState
       quotations = await QuotationService.getMyQuotations();
     } catch (e) {
       debugPrint("Load quotations error: $e");
+      quotations = [];
     } finally {
       if (mounted) setState(() => loading = false);
     }
@@ -68,41 +70,35 @@ class _ClientQuotationListScreenState
 
   @override
   Widget build(BuildContext context) {
-    if (loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
-    if (quotations.isEmpty) {
-      return Scaffold(
-        appBar: AppBar(
-          backgroundColor: AppColors.darkBlue,
-          title: const Text(
-            "My Quotations",
-            style: TextStyle(color: Colors.white),
-          ),
-          iconTheme: const IconThemeData(color: Colors.white),
-        ),
-        body: const Center(
-          child: Text(
-            "No quotations yet",
-            style: TextStyle(fontSize: 16, color: Colors.grey),
-          ),
-        ),
-      );
-    }
-
     return Scaffold(
+      backgroundColor: AppColors.lightGrey,
+
+      // ================= DRAWER =================
+      drawer: const ClientDrawer(
+        currentRoute: '/clientQuotations',
+      ),
+
+      // ================= APP BAR =================
       appBar: AppBar(
         backgroundColor: AppColors.darkBlue,
+        foregroundColor: Colors.white,
         title: const Text(
           "My Quotations",
-          style: TextStyle(color: Colors.white),
+          style: TextStyle(fontWeight: FontWeight.w600),
         ),
-        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: RefreshIndicator(
+
+      // ================= BODY =================
+      body: loading
+          ? const Center(child: CircularProgressIndicator())
+          : quotations.isEmpty
+          ? const Center(
+        child: Text(
+          "No quotations yet",
+          style: TextStyle(fontSize: 16, color: Colors.grey),
+        ),
+      )
+          : RefreshIndicator(
         onRefresh: () async {
           setState(() => loading = true);
           await loadQuotations();
@@ -122,9 +118,10 @@ class _ClientQuotationListScreenState
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) => ClientQuotationDetailsScreen(
-                      quotationId: q['id'],
-                    ),
+                    builder: (_) =>
+                        ClientQuotationDetailsScreen(
+                          quotationId: q['id'],
+                        ),
                   ),
                 );
               },
@@ -137,7 +134,8 @@ class _ClientQuotationListScreenState
                   boxShadow: [
                     BoxShadow(
                       blurRadius: 6,
-                      color: Colors.black.withOpacity(0.05),
+                      color:
+                      Colors.black.withOpacity(0.05),
                     ),
                   ],
                 ),
@@ -146,28 +144,36 @@ class _ClientQuotationListScreenState
                     CircleAvatar(
                       radius: 22,
                       backgroundColor:
-                      getStatusColor(status).withOpacity(0.15),
+                      getStatusColor(status)
+                          .withOpacity(0.15),
                       child: Icon(
                         Icons.description,
-                        color: getStatusColor(status),
+                        color:
+                        getStatusColor(status),
                       ),
                     ),
                     const SizedBox(width: 12),
 
                     Expanded(
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        crossAxisAlignment:
+                        CrossAxisAlignment.start,
                         children: [
                           Text(
                             "₹ ${amount.toStringAsFixed(2)}",
-                            style: const TextStyle(
+                            style:
+                            const TextStyle(
                               fontSize: 16,
-                              fontWeight: FontWeight.bold,
+                              fontWeight:
+                              FontWeight.bold,
                             ),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            q['enquiryTitle']?.toString().isNotEmpty == true
+                            q['enquiryTitle']
+                                ?.toString()
+                                .isNotEmpty ==
+                                true
                                 ? q['enquiryTitle']
                                 : "Quotation Amount",
                             style: TextStyle(
@@ -181,7 +187,10 @@ class _ClientQuotationListScreenState
 
                     statusChip(status),
                     const SizedBox(width: 8),
-                    const Icon(Icons.arrow_forward_ios, size: 16),
+                    const Icon(
+                      Icons.arrow_forward_ios,
+                      size: 16,
+                    ),
                   ],
                 ),
               ),

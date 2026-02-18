@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
+import 'client/dashboard/client_dashboard.dart';
+import 'client/invoices/client_invoice_list_screen.dart';
 import 'firebase_options.dart';
 import 'core/theme/app_theme.dart';
 
@@ -130,7 +132,9 @@ class DealTrackApp extends StatelessWidget {
         '/clientEnquiries': (_) => const ClientEnquiryListScreen(),
         '/clientQuotations': (_) => const ClientQuotationListScreen(),
         '/clientPayments': (_) => const ClientPaymentScreen(),
-        '/clientInvoices': (_) => const ListClientPaymentsScreen(),
+        '/clientInvoices': (_) => const ClientInvoiceListScreen(),
+        '/clientDashboard': (_) => const ClientDashboard(),
+
 
         // ❗ Cannot be const because UID is runtime
         '/clientProfile': (_) => ClientProfileScreen(

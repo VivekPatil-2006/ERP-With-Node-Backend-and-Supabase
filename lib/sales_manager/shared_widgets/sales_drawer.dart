@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import '../../../../services/api_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../core/services/auth_service.dart';
 import '../../auth/login/admin_login_screen.dart';
 
-class SalesDrawer extends StatelessWidget {
+class SalesDrawer extends StatefulWidget {
   final String currentRoute;
 
   const SalesDrawer({
@@ -12,7 +13,8 @@ class SalesDrawer extends StatelessWidget {
     required this.currentRoute,
   });
 
-  // ================= ROUTE → TITLE =================
+  static String? cachedProfileImage;   // 🔥 Cache variable
+  static bool profileLoaded = false;   // 🔥 Load flag
 
   static String getTitle(String route) {
     switch (route) {
@@ -36,6 +38,46 @@ class SalesDrawer extends StatelessWidget {
   }
 
   @override
+  State<SalesDrawer> createState() => _SalesDrawerState();
+}
+
+class _SalesDrawerState extends State<SalesDrawer> {
+  bool loading = false;
+
+  String get salesManagerId =>
+      FirebaseAuth.instance.currentUser!.uid;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // 🔥 Only call API if not already loaded
+    if (!SalesDrawer.profileLoaded) {
+      loadProfileImage();
+    }
+  }
+
+  Future<void> loadProfileImage() async {
+    try {
+      setState(() => loading = true);
+
+      final res =
+      await ApiService.get('/sales-managers/$salesManagerId');
+
+      final data = res['salesManager'];
+
+      SalesDrawer.cachedProfileImage =
+          data['profileImage'] ?? "";
+
+      SalesDrawer.profileLoaded = true;   // 🔥 mark loaded
+    } catch (_) {
+      SalesDrawer.cachedProfileImage = "";
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final user = FirebaseAuth.instance.currentUser;
 
@@ -43,8 +85,7 @@ class SalesDrawer extends StatelessWidget {
       backgroundColor: AppColors.navy,
       child: Column(
         children: [
-          _header(user?.email ?? ''),
-
+          _header(context, user?.email ?? ''),
           const SizedBox(height: 10),
 
           _item(context, Icons.dashboard, 'Dashboard', '/salesDashboard'),
@@ -53,7 +94,6 @@ class SalesDrawer extends StatelessWidget {
           _item(context, Icons.description, 'Quotations', '/salesQuotations'),
           _item(context, Icons.verified, 'LOI Approvals', '/salesLoi'),
           _item(context, Icons.receipt_long, 'Invoices', '/salesInvoices'),
-          _item(context, Icons.person, 'Profile', '/salesProfile'),
 
           const Spacer(),
           const Divider(color: Colors.white24),
@@ -66,6 +106,10 @@ class SalesDrawer extends StatelessWidget {
             ),
             onTap: () async {
               await AuthService().logout();
+
+              // 🔥 Reset cache on logout
+              SalesDrawer.profileLoaded = false;
+              SalesDrawer.cachedProfileImage = null;
 
               Navigator.pushAndRemoveUntil(
                 context,
@@ -83,50 +127,68 @@ class SalesDrawer extends StatelessWidget {
 
   // ================= HEADER =================
 
-  Widget _header(String email) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 50, 20, 24),
-      decoration: const BoxDecoration(
-        gradient: LinearGradient(
-          colors: [AppColors.navy, AppColors.darkBlue],
+  Widget _header(BuildContext context, String email) {
+    final profileImage = SalesDrawer.cachedProfileImage ?? "";
+
+    return GestureDetector(
+      onTap: () {
+        Navigator.pushReplacementNamed(context, '/salesProfile');
+      },
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.fromLTRB(20, 50, 20, 24),
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [AppColors.navy, AppColors.darkBlue],
+          ),
         ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          CircleAvatar(
-            radius: 32,
-            backgroundColor: Colors.white24,
-            child: const Icon(
-              Icons.person,
-              color: Colors.white,
-              size: 30,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            CircleAvatar(
+              radius: 32,
+              backgroundColor: Colors.white24,
+              backgroundImage: profileImage.isNotEmpty
+                  ? NetworkImage(profileImage)
+                  : null,
+              child: profileImage.isEmpty
+                  ? const Icon(
+                Icons.person,
+                color: Colors.white,
+                size: 30,
+              )
+                  : null,
             ),
-          ),
-          const SizedBox(height: 14),
-          const Text(
-            'Sales Manager',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
+            const SizedBox(height: 14),
+            const Text(
+              'Sales Manager',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
             ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            email,
-            style: const TextStyle(
-              color: Colors.white70,
-              fontSize: 12,
+            const SizedBox(height: 6),
+            Text(
+              email,
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 12,
+              ),
             ),
-          ),
-        ],
+            const SizedBox(height: 6),
+            const Text(
+              "View Profile",
+              style: TextStyle(
+                color: AppColors.neonBlue,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
-
-  // ================= MENU ITEM =================
 
   Widget _item(
       BuildContext context,
@@ -134,7 +196,7 @@ class SalesDrawer extends StatelessWidget {
       String title,
       String route,
       ) {
-    final bool selected = currentRoute == route;
+    final bool selected = widget.currentRoute == route;
 
     return ListTile(
       leading: Icon(
@@ -158,3 +220,4 @@ class SalesDrawer extends StatelessWidget {
     );
   }
 }
+
