@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
-import '../../main_layout.dart';
 import '../register/admin_register_screen.dart';
 import '../../core/theme/app_colors.dart';
 import '../../services/api_service.dart';
@@ -30,7 +29,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     setState(() => isLoading = true);
 
     try {
-      // 1️⃣ Firebase Authentication
+      // 1️⃣ Firebase Login
       final cred = await FirebaseAuth.instance.signInWithEmailAndPassword(
         email: emailCtrl.text.trim(),
         password: passwordCtrl.text.trim(),
@@ -41,10 +40,10 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
         throw Exception('Login failed');
       }
 
-      // 2️⃣ Get Firebase ID token
+      // 2️⃣ Get ID Token
       final token = await user.getIdToken(true);
 
-      // 3️⃣ Verify login with backend
+      // 3️⃣ Verify with backend
       final response = await ApiService.postPublic(
         "/auth/login",
         {"token": token},
@@ -52,51 +51,42 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
 
       if (!mounted) return;
 
-      // 4️⃣ ROLE FROM BACKEND (DECIDED BY TABLE MATCHING)
       final role = response['user']?['role'];
 
       if (role == null) {
         throw Exception('Role not found');
       }
 
-      // 5️⃣ ROUTE BASED ON ROLE
+      // 4️⃣ ROUTE BASED NAVIGATION
       switch (role) {
         case 'admin':
           Navigator.pushReplacementNamed(context, '/clients');
           break;
 
         case 'sales_manager':
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const MainLayout(role: 'sales_manager'),
-            ),
-          );
+          Navigator.pushReplacementNamed(context, '/salesEnquiries');
           break;
 
         case 'client':
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(
-              builder: (_) => const MainLayout(role: 'client'),
-            ),
-          );
+          Navigator.pushReplacementNamed(context, '/clientEnquiries');
           break;
 
         default:
           throw Exception('Unknown role: $role');
       }
     } catch (e) {
-      // 🔐 Clean logout on failure
       await FirebaseAuth.instance.signOut();
 
       if (!mounted) return;
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(e.toString())),
       );
     }
 
-    setState(() => isLoading = false);
+    if (mounted) {
+      setState(() => isLoading = false);
+    }
   }
 
   // =========================
@@ -107,20 +97,17 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     return Scaffold(
       body: Stack(
         children: [
-          // 🤖 Background
           Positioned.fill(
             child: Image.asset(
               'assets/ai/ai_pattern.png',
               fit: BoxFit.cover,
             ),
           ),
-
           Positioned.fill(
             child: Container(
               color: Colors.white.withOpacity(0.92),
             ),
           ),
-
           Center(
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
@@ -246,13 +233,14 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
 
                       const SizedBox(height: 12),
 
-                      // REGISTER (ADMIN ONLY)
+                      // REGISTER
                       OutlinedButton(
                         onPressed: () {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => const AdminRegisterScreen(),
+                              builder: (_) =>
+                              const AdminRegisterScreen(),
                             ),
                           );
                         },
@@ -272,6 +260,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                             );
 
                             if (!mounted) return;
+
                             ScaffoldMessenger.of(context).showSnackBar(
                               const SnackBar(
                                 content:

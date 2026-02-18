@@ -7,14 +7,14 @@ import '../../shared/widgets/loading_indicator.dart';
 import 'services/client_service.dart';
 import 'client_detail_screen.dart';
 
-class ClientListScreen extends StatefulWidget {
-  const ClientListScreen({super.key});
+class AdminClientListScreen extends StatefulWidget {
+  const AdminClientListScreen({super.key});
 
   @override
-  State<ClientListScreen> createState() => _ClientListScreenState();
+  State<AdminClientListScreen> createState() => _AdminClientListScreenState();
 }
 
-class _ClientListScreenState extends State<ClientListScreen> {
+class _AdminClientListScreenState extends State<AdminClientListScreen> {
   String _searchQuery = '';
   late Future<List<Map<String, dynamic>>> _clientsFuture;
 

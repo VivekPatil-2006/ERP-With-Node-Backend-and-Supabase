@@ -482,6 +482,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../shared_widgets/sales_drawer.dart';
 import 'services/loi_service.dart';
 import 'loi_file_viewer.dart';
 
@@ -571,24 +572,25 @@ class _LoiAckScreenState extends State<LoiAckScreen> {
   // ================= UI =================
 
   @override
+  @override
   Widget build(BuildContext context) {
-    if (loading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
-    }
-
     return Scaffold(
+      // ✅ Attach Drawer
+      drawer: const SalesDrawer(currentRoute: '/salesLoi'),
+
+      // ✅ Dynamic AppBar Title
       appBar: AppBar(
-        title: const Text(
-          "LOI Requests",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: AppColors.darkBlue,
+        backgroundColor: AppColors.navy,
         foregroundColor: Colors.white,
+        title: Text(
+          SalesDrawer.getTitle('/salesLoi'),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
       ),
 
-      body: lois.isEmpty
+      body: loading
+          ? const Center(child: CircularProgressIndicator())
+          : lois.isEmpty
           ? const Center(child: Text("No LOI Requests"))
           : ListView.builder(
         itemCount: lois.length,
@@ -608,44 +610,50 @@ class _LoiAckScreenState extends State<LoiAckScreen> {
           return Card(
             margin: const EdgeInsets.all(12),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(14),
+              borderRadius:
+              BorderRadius.circular(14),
             ),
             child: Padding(
-              padding: const EdgeInsets.all(14),
+              padding:
+              const EdgeInsets.all(14),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment:
+                CrossAxisAlignment.start,
                 children: [
                   Text(
                     "Quotation ID: $quotationId",
                     style: const TextStyle(
-                        fontWeight: FontWeight.bold),
+                        fontWeight:
+                        FontWeight.bold),
                   ),
-
                   const SizedBox(height: 6),
-
                   _statusChip(status),
-
                   const SizedBox(height: 12),
 
                   Row(
                     children: [
                       OutlinedButton.icon(
-                        icon:
-                        const Icon(Icons.visibility),
-                        label:
-                        const Text("View LOI"),
-                        onPressed: attachmentUrl ==
+                        icon: const Icon(
+                            Icons.visibility),
+                        label: const Text(
+                            "View LOI"),
+                        onPressed:
+                        attachmentUrl ==
                             null ||
-                            attachmentUrl == ""
+                            attachmentUrl ==
+                                ""
                             ? null
                             : () {
-                          Navigator.push(
+                          Navigator
+                              .push(
                             context,
                             MaterialPageRoute(
                               builder: (_) =>
                                   LoiFileViewer(
-                                    url: attachmentUrl,
-                                    fileType: fileType,
+                                    url:
+                                    attachmentUrl,
+                                    fileType:
+                                    fileType,
                                   ),
                             ),
                           );
@@ -660,56 +668,75 @@ class _LoiAckScreenState extends State<LoiAckScreen> {
                     Row(
                       children: [
                         Expanded(
-                          child: ElevatedButton(
-                            style: ElevatedButton
+                          child:
+                          ElevatedButton(
+                            style:
+                            ElevatedButton
                                 .styleFrom(
                               backgroundColor:
                               Colors.green,
                             ),
-                            onPressed: actionLoading
+                            onPressed:
+                            actionLoading
                                 ? null
-                                : () =>
-                                approve(loi['loiId']),
-                            child: processingLoiId ==
-                                loi['loiId'] &&
+                                : () => approve(
+                                loi[
+                                'loiId']),
+                            child:
+                            processingLoiId ==
+                                loi[
+                                'loiId'] &&
                                 actionLoading
                                 ? const SizedBox(
                               height: 18,
                               width: 18,
                               child:
                               CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
+                                strokeWidth:
+                                2,
+                                color: Colors
+                                    .white,
                               ),
                             )
-                                : const Text("ACCEPT"),
+                                : const Text(
+                                "ACCEPT"),
                           ),
                         ),
-                        const SizedBox(width: 10),
+                        const SizedBox(
+                            width: 10),
                         Expanded(
-                          child: ElevatedButton(
-                            style: ElevatedButton
+                          child:
+                          ElevatedButton(
+                            style:
+                            ElevatedButton
                                 .styleFrom(
                               backgroundColor:
                               Colors.red,
                             ),
-                            onPressed: actionLoading
+                            onPressed:
+                            actionLoading
                                 ? null
-                                : () =>
-                                reject(loi['loiId']),
-                            child: processingLoiId ==
-                                loi['loiId'] &&
+                                : () => reject(
+                                loi[
+                                'loiId']),
+                            child:
+                            processingLoiId ==
+                                loi[
+                                'loiId'] &&
                                 actionLoading
                                 ? const SizedBox(
                               height: 18,
                               width: 18,
                               child:
                               CircularProgressIndicator(
-                                strokeWidth: 2,
-                                color: Colors.white,
+                                strokeWidth:
+                                2,
+                                color: Colors
+                                    .white,
                               ),
                             )
-                                : const Text("REJECT"),
+                                : const Text(
+                                "REJECT"),
                           ),
                         ),
                       ],
@@ -722,6 +749,7 @@ class _LoiAckScreenState extends State<LoiAckScreen> {
       ),
     );
   }
+
 
   // ================= STATUS CHIP =================
 

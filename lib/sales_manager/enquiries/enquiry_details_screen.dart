@@ -395,6 +395,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../../services/api_service.dart';
 import 'services/enquiry_service.dart';
 
 class EnquiryDetailsScreen extends StatefulWidget {
@@ -426,19 +427,34 @@ class _EnquiryDetailsScreenState extends State<EnquiryDetailsScreen> {
   // LOAD DATA (API)
   // ===============================
 
+
+
   Future<void> loadDetails() async {
     try {
-      final data = await EnquiryService()
-          .getEnquiryWithProduct(widget.enquiryId);
+      final data =
+      await EnquiryService().getEnquiryWithProduct(widget.enquiryId);
 
       enquiry = data;
-      product = data['product'];
+
+      // If backend embeds product
+      if (data['product'] != null) {
+        product = data['product'];
+      }
+      // If backend only returns productId
+      else if (data['productId'] != null) {
+        final productRes = await ApiService.get(
+            '/products/${data['productId']}');
+
+        product = productRes['product'];
+      }
+
     } catch (e) {
       debugPrint("Enquiry Details Error => $e");
     } finally {
       if (mounted) setState(() => loading = false);
     }
   }
+
 
   // ===============================
   // UI
@@ -508,41 +524,129 @@ class _EnquiryDetailsScreenState extends State<EnquiryDetailsScreen> {
             const SizedBox(height: 16),
 
             // ================= PRODUCT INFO =================
+            // ================= PRODUCT INFO =================
             if (product != null)
               buildSection(
                 title: "Product Information",
                 icon: Icons.inventory,
                 child: Column(
-                  crossAxisAlignment:
-                  CrossAxisAlignment.start,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Basic Details
+                    infoRow("Product Name", product!['title']),
+                    infoRow("Product ID", product!['productId']),
+                    //infoRow("Item No", product!['itemNo']),
+                    infoRow("Size", product!['size']),
+                    infoRow("Stock", product!['stock']?.toString()),
                     infoRow(
-                        "Product Name",
-                        product!['title']),
-                    infoRow(
-                        "Item No",
-                        product!['item_no']
-                            ?.toString()),
-                    infoRow(
-                        "Size",
-                        product!['size']
-                            ?.toString()),
+                        "Active",
+                        product!['active'] == true ? "Yes" : "No"),
+
+                    const SizedBox(height: 10),
+
+                    // Pricing
+                    // const Text(
+                    //   "Pricing",
+                    //   style: TextStyle(fontWeight: FontWeight.bold),
+                    // ),
+                    // const SizedBox(height: 6),
                     // infoRow(
                     //   "Base Price",
-                    //   product!['pricing']
-                    //   ?['basePrice'] !=
-                    //       null
+                    //   product!['pricing']?['basePrice'] != null
                     //       ? "₹ ${product!['pricing']['basePrice']}"
                     //       : "-",
                     // ),
+                    // infoRow(
+                    //   "Total Price",
+                    //   product!['pricing']?['totalPrice'] != null
+                    //       ? "₹ ${product!['pricing']['totalPrice']}"
+                    //       : "-",
+                    // ),
+                    //
+                    // const SizedBox(height: 10),
+
+                    // Tax
+                    // const Text(
+                    //   "Tax Details",
+                    //   style: TextStyle(fontWeight: FontWeight.bold),
+                    // ),
+                    const SizedBox(height: 6),
                     infoRow(
-                      "Stock",
-                      product!['stock']
-                          ?.toString(),
-                    ),
+                        "CGST",
+                        product!['tax']?['cgst']?.toString() ?? "0"),
+                    infoRow(
+                        "SGST",
+                        product!['tax']?['sgst']?.toString() ?? "0"),
+
+                    const SizedBox(height: 10),
+
+                    // Colour
+                    if (product!['colour'] != null)
+                      infoRow(
+                          "Colour",
+                          product!['colour']['colourName'] ?? "-"),
+
+                    const SizedBox(height: 10),
+
+                    // Payment Terms
+                    if (product!['paymentTerm'] != null) ...[
+                      const Text(
+                        "Payment Terms",
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 6),
+                      infoRow(
+                        "Advance %",
+                        product!['paymentTerm']
+                        ?['advancePaymentPercent']
+                            ?.toString() ??
+                            "-",
+                      ),
+                      infoRow(
+                        "Interim %",
+                        product!['paymentTerm']
+                        ?['interimPaymentPercent']
+                            ?.toString() ??
+                            "-",
+                      ),
+                      infoRow(
+                        "Final %",
+                        product!['paymentTerm']
+                        ?['finalPaymentPercent']
+                            ?.toString() ??
+                            "-",
+                      ),
+                    ],
+
+                    const SizedBox(height: 10),
+
+                    // Specifications
+                    // if ((product!['specifications'] as List?)?.isNotEmpty == true) ...[
+                    //   const Text(
+                    //     "Specifications",
+                    //     style: TextStyle(fontWeight: FontWeight.bold),
+                    //   ),
+                    //   const SizedBox(height: 6),
+                    //
+                    //   ...(product!['specifications'] as List)
+                    //       .where((spec) =>
+                    //   spec != null &&
+                    //       spec['name'] != null &&
+                    //       spec['name'].toString().isNotEmpty)
+                    //       .map(
+                    //         (spec) => infoRow(
+                    //       spec['name']?.toString() ?? "-",
+                    //       spec['value']?.toString() ?? "-",
+                    //     ),
+                    //   )
+                    //       .toList(),
+                    //],
+
                   ],
                 ),
               ),
+
+
           ],
         ),
       ),

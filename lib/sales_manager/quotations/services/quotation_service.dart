@@ -1,6 +1,7 @@
 import '../../../../services/api_service.dart';
 
 class QuotationService {
+
   /* =======================================================
      CREATE QUOTATION
      POST /api/quotations
@@ -15,21 +16,20 @@ class QuotationService {
     double? extraDiscount,
     DateTime? possibleDeliveryDate,
   }) async {
-    await ApiService.post(
-      '/quotations',
-      {
-        'enquiryId': enquiryId,
-        'baseAmount': baseAmount,
-        'discountPercent': discountPercent,
-        'cgstPercent': cgstPercent,
-        'sgstPercent': sgstPercent,
-        'quantity': quantity,
-        if (extraDiscount != null) 'extraDiscount': extraDiscount,
-        if (possibleDeliveryDate != null)
-          'possibleDeliveryDate':
-          possibleDeliveryDate.toIso8601String(),
-      },
-    );
+
+    final body = {
+      'enquiryId': enquiryId,
+      'baseAmount': baseAmount,
+      'discountPercent': discountPercent,
+      'cgstPercent': cgstPercent,
+      'sgstPercent': sgstPercent,
+      'quantity': quantity,
+      'extraDiscount': extraDiscount ?? 0,
+      if (possibleDeliveryDate != null)
+        'possibleDeliveryDate': possibleDeliveryDate.toIso8601String(),
+    };
+
+    await ApiService.post('/quotations', body);
   }
 
   /* =======================================================
@@ -38,19 +38,22 @@ class QuotationService {
      ======================================================= */
   Future<List<Map<String, dynamic>>> getQuotations() async {
     final response = await ApiService.get('/quotations');
+
     return List<Map<String, dynamic>>.from(
       response['quotations'] ?? [],
     );
   }
 
+  /* =======================================================
+     GET SINGLE QUOTATION
+     GET /api/quotations/:id
+     ======================================================= */
   Future<Map<String, dynamic>> getQuotationById(
       String quotationId) async {
-    final response = await ApiService.get('/quotations');
-    final list =
-    List<Map<String, dynamic>>.from(response['quotations']);
 
-    return list.firstWhere(
-          (q) => q['quotationId'] == quotationId,
-    );
+    final response =
+    await ApiService.get('/quotations/$quotationId');
+
+    return Map<String, dynamic>.from(response['quotation'] ?? {});
   }
 }

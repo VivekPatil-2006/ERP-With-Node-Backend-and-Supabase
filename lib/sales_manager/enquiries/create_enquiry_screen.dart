@@ -651,6 +651,7 @@
 //   }
 // }
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../../../services/api_service.dart';
@@ -735,8 +736,11 @@ class _CreateEnquiryScreenState extends State<CreateEnquiryScreen> {
       return;
     }
 
-    final qty = int.tryParse(qtyCtrl.text.trim()) ?? 0;
-    if (qty <= 0) {
+    final qtyText = qtyCtrl.text.trim();
+    final int? qty =
+    qtyText.isNotEmpty ? int.tryParse(qtyText) : null;
+
+    if (qtyText.isNotEmpty && (qty == null || qty <= 0)) {
       showMsg("Enter valid quantity");
       return;
     }
@@ -749,7 +753,7 @@ class _CreateEnquiryScreenState extends State<CreateEnquiryScreen> {
         productId: selectedProductId!,
         title: titleCtrl.text.trim(),
         description: descCtrl.text.trim(),
-        quantity: qty,
+        quantity: qty, // ✅ optional quantity
         source: selectedSource,
         expectedDate: expectedDate,
       );
@@ -990,30 +994,86 @@ class _CreateEnquiryScreenState extends State<CreateEnquiryScreen> {
   // ================= UI HELPERS =================
 
   Widget buildClientPreview(Map<String, dynamic> c) {
+    final fullName =
+    "${c['firstName'] ?? ''} ${c['lastName'] ?? ''}".trim();
+
     return buildPreviewCard(
-      title: c['companyName'] ??
-          "${c['firstName'] ?? ''} ${c['lastName'] ?? ''}",
+      title: c['companyName']?.toString().isNotEmpty == true
+          ? c['companyName']
+          : (fullName.isNotEmpty ? fullName : "Client Details"),
       rows: {
+        "Client ID": c['clientId'] ?? "-",
+        "Status": c['status'] ?? "active",
+
+        "First Name": c['firstName'] ?? "-",
+        "Last Name": c['lastName'] ?? "-",
         "Email": c['emailAddress'] ?? "-",
-        "Phone": c['phoneNo1'] ?? "-",
-        "City": "${c['city'] ?? '-'}, ${c['state'] ?? '-'}",
+
+        "Phone 1": c['phoneNo1'] ?? "-",
+        "Phone 2": c['phoneNo2'] ?? "-",
+        "Cellphone": c['cellphone'] ?? "-",
+        "Fax": c['faxNo'] ?? "-",
+
+        "Contact Person": c['contact_person'] ?? "-",
+        "Customer Code": c['customerCode'] ?? "-",
+
+        "EIN/TIN": c['einTin'] ?? "-",
+        "VAT Identifier": c['vatIdentifier'] ?? "-",
+        "SSN": c['socialSecurityNumber'] ?? "-",
+
+        "Street": c['street'] ?? "-",
+        "City": c['city'] ?? "-",
+        "State": c['state'] ?? "-",
+        "Postcode": c['postcode'] ?? "-",
+        "Country": c['country'] ?? "-",
+
+        "Created At": c['createdAt'] != null
+            ? DateTime.tryParse(c['createdAt']) != null
+            ? DateTime.parse(c['createdAt'])
+            .toLocal()
+            .toString()
+            .split(' ')[0]
+            : "-"
+            : "-",
       },
     );
   }
 
   Widget buildProductPreview(Map<String, dynamic> p) {
     final pricing = p['pricing'] ?? {};
+    final tax = p['tax'] ?? {};
+    final colour = p['colour'] ?? {};
+    final payment = p['paymentTerm'] ?? {};
+
     return buildPreviewCard(
       title: p['title'] ?? "-",
       rows: {
+        "Product ID": p['productId'] ?? "-",
         "Item No": p['itemNo'] ?? "-",
+        "Size": p['size'] ?? "-",
         "Stock": p['stock']?.toString() ?? "-",
+        "Active": p['active'] == true ? "Yes" : "No",
+
         "Base Price": pricing['basePrice'] != null
             ? "₹ ${pricing['basePrice']}"
             : "-",
+
+        "Total Price": pricing['totalPrice'] != null
+            ? "₹ ${pricing['totalPrice']}"
+            : "-",
+
+        "CGST": tax['cgst']?.toString() ?? "0",
+        "SGST": tax['sgst']?.toString() ?? "0",
+
+        "Colour": colour['colourName'] ?? "-",
+
+        "Advance %": payment['advancePaymentPercent']?.toString() ?? "-",
+        "Interim %": payment['interimPaymentPercent']?.toString() ?? "-",
+        "Final %": payment['finalPaymentPercent']?.toString() ?? "-",
       },
     );
   }
+
 
   Widget buildPreviewCard({
     required String title,
@@ -1102,6 +1162,8 @@ class _CreateEnquiryScreenState extends State<CreateEnquiryScreen> {
       maxLines: maxLines,
       keyboardType:
       isNumber ? TextInputType.number : TextInputType.text,
+      inputFormatters:
+      isNumber ? [FilteringTextInputFormatter.digitsOnly] : null,
       decoration: InputDecoration(
         labelText: label,
         prefixIcon: Icon(icon),
@@ -1111,6 +1173,7 @@ class _CreateEnquiryScreenState extends State<CreateEnquiryScreen> {
       ),
     );
   }
+
 
   @override
   void dispose() {

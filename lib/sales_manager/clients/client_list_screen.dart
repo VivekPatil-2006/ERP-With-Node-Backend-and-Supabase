@@ -2,17 +2,18 @@ import 'package:flutter/material.dart';
 
 import '../../client/profile/client_profile_screen.dart';
 import '../../core/theme/app_colors.dart';
+import '../shared_widgets/sales_drawer.dart';
 import 'services/client_services.dart';
 import 'create_client_screen.dart';
 
-class ClientListScreen extends StatefulWidget {
-  const ClientListScreen({super.key});
+class SalesClientListScreen extends StatefulWidget {
+  const SalesClientListScreen ({super.key});
 
   @override
-  State<ClientListScreen> createState() => _ClientListScreenState();
+  State<SalesClientListScreen > createState() => _SalesClientListScreenState();
 }
 
-class _ClientListScreenState extends State<ClientListScreen> {
+class _SalesClientListScreenState extends State<SalesClientListScreen > {
   String searchText = '';
   late Future<List<Map<String, dynamic>>> _clientsFuture;
 
@@ -49,17 +50,17 @@ class _ClientListScreenState extends State<ClientListScreen> {
   // =============================
 
   @override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
+      drawer: const SalesDrawer(currentRoute: '/salesClients'),
+
       appBar: AppBar(
-        backgroundColor: AppColors.darkBlue,
-        iconTheme: const IconThemeData(color: Colors.white),
-        title: const Text(
-          'Clients',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-          ),
+        backgroundColor: AppColors.navy,
+        foregroundColor: Colors.white,
+        title: Text(
+          SalesDrawer.getTitle('/salesClients'),
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
       ),
 
@@ -114,7 +115,6 @@ class _ClientListScreenState extends State<ClientListScreen> {
                 }
 
                 final clients = snapshot.data ?? [];
-
                 final filtered =
                 clients.where(_filterClient).toList();
 
@@ -150,53 +150,56 @@ class _ClientListScreenState extends State<ClientListScreen> {
                               color: AppColors.primaryBlue,
                             ),
                           ),
-
-                          // ✅ CLIENT NAME (NOT COMPANY)
                           title: Text(
-                            data['clientName'] ?? 'Unnamed Client',
+                            data['clientName'] ??
+                                'Unnamed Client',
                             style: const TextStyle(
                               fontWeight: FontWeight.bold,
                             ),
                           ),
-
                           subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                            crossAxisAlignment:
+                            CrossAxisAlignment.start,
                             children: [
-                              // ✅ COMPANY NAME
-                              if ((data['companyName'] ?? '').toString().isNotEmpty)
+                              if ((data['companyName'] ?? '')
+                                  .toString()
+                                  .isNotEmpty)
                                 Text(
                                   data['companyName'],
-                                  style: const TextStyle(fontSize: 13),
+                                  style: const TextStyle(
+                                      fontSize: 13),
                                 ),
-
-                              // ✅ EMAIL
-                              if ((data['email'] ?? '').toString().isNotEmpty)
+                              if ((data['email'] ?? '')
+                                  .toString()
+                                  .isNotEmpty)
                                 Text(
                                   data['email'],
-                                  style: const TextStyle(fontSize: 12),
+                                  style: const TextStyle(
+                                      fontSize: 12),
                                 ),
-
-                              // ✅ PHONE
-                              if ((data['phoneNo1'] ?? '').toString().isNotEmpty)
+                              if ((data['phoneNo1'] ?? '')
+                                  .toString()
+                                  .isNotEmpty)
                                 Text(
                                   data['phoneNo1'],
-                                  style: const TextStyle(fontSize: 12),
+                                  style: const TextStyle(
+                                      fontSize: 12),
                                 ),
                             ],
                           ),
-
                           trailing: const Icon(
                             Icons.arrow_forward_ios,
                             size: 16,
                           ),
-
                           onTap: () {
                             Navigator.push(
                               context,
                               MaterialPageRoute(
-                                builder: (_) => ClientProfileScreen(
-                                  clientId: data['clientId'],
-                                ),
+                                builder: (_) =>
+                                    ClientProfileScreen(
+                                      clientId:
+                                      data['clientId'],
+                                    ),
                               ),
                             );
                           },
@@ -212,4 +215,5 @@ class _ClientListScreenState extends State<ClientListScreen> {
       ),
     );
   }
+
 }

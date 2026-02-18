@@ -660,6 +660,10 @@ class CreateQuotationScreen extends StatefulWidget {
 class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
   // ================= STATE =================
 
+  final quantityCtrl = TextEditingController(text: "1");
+  DateTime? possibleDeliveryDate;
+
+  double finalAmount = 0;
   String? selectedEnquiryId;
   Map<String, dynamic>? selectedEnquiry;
 
@@ -674,6 +678,43 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
 
   // ================= FETCH ENQUIRIES =================
 
+  void calculateFinal() {
+    final base = double.tryParse(baseCtrl.text) ?? 0;
+    final discount = double.tryParse(discountCtrl.text) ?? 0;
+    final extra = double.tryParse(extraDiscountCtrl.text) ?? 0;
+    final cgst = double.tryParse(cgstCtrl.text) ?? 0;
+    final sgst = double.tryParse(sgstCtrl.text) ?? 0;
+    final quantity = double.tryParse(quantityCtrl.text) ?? 1;
+
+    final gross = base * quantity;
+
+    final percentDiscount = gross * (discount / 100);
+    final afterPercentDiscount = gross - percentDiscount;
+
+    final afterExtraDiscount = afterPercentDiscount - extra;
+
+    final gstRate = (cgst + sgst) / 100;
+    final gstAmount = afterExtraDiscount * gstRate;
+
+    setState(() {
+      finalAmount = afterExtraDiscount + gstAmount;
+    });
+  }
+
+  Future<void> pickPossibleDeliveryDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDate: DateTime.now(),
+    );
+
+    if (picked != null) {
+      setState(() => possibleDeliveryDate = picked);
+    }
+  }
+
+
   Future<List<Map<String, dynamic>>> fetchEnquiries() async {
     final res = await ApiService.get('/enquiries');
     final list = List<Map<String, dynamic>>.from(res['enquiries'] ?? []);
@@ -683,21 +724,38 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
   // ================= FETCH PRODUCT =================
 
   Future<void> loadProductDefaults(String productId) async {
-    setState(() => loading = true);
+    try {
+      setState(() => loading = true);
 
-    final res = await ApiService.get('/products/$productId');
-    final p = res['product'];
+      final res = await ApiService.get('/products/$productId');
 
-    final pricing = p['pricing'] ?? {};
-    final tax = p['tax'] ?? {};
+      if (res == null || res['product'] == null) {
+        showMsg("Product not found");
+        return;
+      }
 
-    baseCtrl.text = (pricing['basePrice'] ?? 0).toString();
-    discountCtrl.text = (p['discountPercent'] ?? 0).toString();
-    cgstCtrl.text = (tax['cgst'] ?? 0).toString();
-    sgstCtrl.text = (tax['sgst'] ?? 0).toString();
+      final p = Map<String, dynamic>.from(res['product']);
 
-    setState(() => loading = false);
+      final pricing = p['pricing'] != null
+          ? Map<String, dynamic>.from(p['pricing'])
+          : {};
+
+      final tax = p['tax'] != null
+          ? Map<String, dynamic>.from(p['tax'])
+          : {};
+
+      baseCtrl.text = (pricing['basePrice'] ?? 0).toString();
+      discountCtrl.text = (p['discountPercent'] ?? 0).toString();
+      cgstCtrl.text = (tax['cgst'] ?? 0).toString();
+      sgstCtrl.text = (tax['sgst'] ?? 0).toString();
+    } catch (e) {
+      debugPrint("Load Product Defaults Error => $e");
+      showMsg("Failed to load product defaults");
+    } finally {
+      if (mounted) setState(() => loading = false);
+    }
   }
+
 
   // ================= SAVE QUOTATION =================
 
@@ -707,20 +765,35 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
       return;
     }
 
+    if (selectedEnquiry == null) {
+      showMsg("Select enquiry");
+      return;
+    }
+
+
     try {
       setState(() => sending = true);
 
+      final base = double.tryParse(baseCtrl.text) ?? 0;
+      final discount = double.tryParse(discountCtrl.text) ?? 0;
+      final extra = double.tryParse(extraDiscountCtrl.text) ?? 0;
+      final cgst = double.tryParse(cgstCtrl.text) ?? 0;
+      final sgst = double.tryParse(sgstCtrl.text) ?? 0;
+
       await QuotationService().createQuotation(
         enquiryId: selectedEnquiry!['enquiryId'],
-        baseAmount: double.parse(baseCtrl.text),
-        discountPercent: double.parse(discountCtrl.text),
-        extraDiscount: double.parse(extraDiscountCtrl.text),
-        cgstPercent: double.parse(cgstCtrl.text),
-        sgstPercent: double.parse(sgstCtrl.text),
-        quantity: selectedEnquiry!['quantity'] ?? 1,
+        baseAmount: base,
+        discountPercent: discount,
+        extraDiscount: extra,
+        cgstPercent: cgst,
+        sgstPercent: sgst,
+        quantity: int.tryParse(quantityCtrl.text) ?? 1,
+        possibleDeliveryDate: possibleDeliveryDate,
+
       );
 
       showMsg("Quotation created successfully");
+
       if (mounted) Navigator.pop(context, true);
     } catch (e) {
       debugPrint("Create Quotation Error => $e");
@@ -729,6 +802,7 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
       if (mounted) setState(() => sending = false);
     }
   }
+
 
   void showMsg(String msg) {
     ScaffoldMessenger.of(context)
@@ -766,37 +840,64 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
                   }
 
                   final enquiries = snapshot.data!;
+
                   if (enquiries.isEmpty) {
                     return const Text("No pending enquiries");
                   }
 
-                  return DropdownButtonFormField<String>(
-                    isExpanded: true,
-                    decoration: const InputDecoration(
-                      border: OutlineInputBorder(),
-                      prefixIcon: Icon(Icons.assignment),
+                  return SizedBox(
+                    height: 120, // Scrollable height
+                    child: ListView.builder(
+                      itemCount: enquiries.length,
+                      itemBuilder: (context, index) {
+                        final e = enquiries[index];
+                        final isSelected =
+                            selectedEnquiryId == e['enquiryId'];
+
+                        return GestureDetector(
+                          onTap: () async {
+                            setState(() {
+                              selectedEnquiryId = e['enquiryId'];
+                              selectedEnquiry = e;
+                            });
+
+                            if (e['productId'] != null) {
+                              await loadProductDefaults(e['productId']);
+                            }
+                          },
+                          child: Container(
+                            margin: const EdgeInsets.only(bottom: 10),
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: isSelected
+                                  ? AppColors.darkBlue.withOpacity(0.1)
+                                  : Colors.grey.shade50,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isSelected
+                                    ? AppColors.darkBlue
+                                    : Colors.grey.shade300,
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment:
+                              CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  e['title'] ?? "-",
+                                  style: const TextStyle(
+                                      fontWeight: FontWeight.bold),
+                                ),
+                                const SizedBox(height: 4),
+                                //Text("Qty: ${e['quantity'] ?? 1}"),
+                                //Text("Source: ${e['source'] ?? "-"}"),
+                                //Text("Status: ${e['status'] ?? "-"}"),
+                              ],
+                            ),
+                          ),
+                        );
+                      },
                     ),
-                    hint: const Text("Choose Enquiry"),
-                    value: selectedEnquiryId,
-                    items: enquiries.map((e) {
-                      return DropdownMenuItem<String>(
-                        value: e['enquiryId'],
-                        child: Text(
-                          e['title'] ?? '-',
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (val) async {
-                      final e =
-                      enquiries.firstWhere((x) => x['enquiryId'] == val);
-                      setState(() {
-                        selectedEnquiryId = val;
-                        selectedEnquiry = e;
-                      });
-                      await loadProductDefaults(e['productId']);
-                    },
                   );
                 },
               ),
@@ -813,13 +914,25 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    infoRow("Title", selectedEnquiry!['title']),
+                    infoRow("Enquiry ID",
+                        selectedEnquiry!['enquiryId'] ?? "-"),
+                    infoRow("Title",
+                        selectedEnquiry!['title'] ?? "-"),
+                    infoRow("Description",
+                        selectedEnquiry!['description'] ?? "-"),
                     infoRow("Quantity",
-                        (selectedEnquiry!['quantity'] ?? 1).toString()),
-                    infoRow("Source", selectedEnquiry!['source'] ?? "-"),
+                        (selectedEnquiry!['quantity'] ?? 1)
+                            .toString()),
+                    infoRow("Source",
+                        selectedEnquiry!['source'] ?? "-"),
+                    infoRow("Status",
+                        selectedEnquiry!['status'] ?? "-"),
+                    // infoRow("Expected Date",
+                    //     selectedEnquiry!['expectedDate'] ?? "-"),
                   ],
                 ),
               ),
+
 
             const SizedBox(height: 16),
 
@@ -838,6 +951,31 @@ class _CreateQuotationScreenState extends State<CreateQuotationScreen> {
                 ],
               ),
             ),
+
+            const SizedBox(height: 16),
+
+            buildCard(
+              title: "Delivery Information",
+              icon: Icons.local_shipping,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  OutlinedButton.icon(
+                    icon: const Icon(Icons.calendar_today),
+                    label: Text(
+                      possibleDeliveryDate == null
+                          ? "Select Possible Delivery Date"
+                          : possibleDeliveryDate!
+                          .toLocal()
+                          .toString()
+                          .split(" ")[0],
+                    ),
+                    onPressed: pickPossibleDeliveryDate,
+                  ),
+                ],
+              ),
+            ),
+
 
             const SizedBox(height: 24),
 

@@ -970,6 +970,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:intl/intl.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../shared_widgets/sales_drawer.dart';
 
 class SalesDashboard extends StatefulWidget {
   const SalesDashboard({super.key});
@@ -1055,133 +1056,187 @@ class _SalesDashboardState extends State<SalesDashboard> {
   // =====================================================
 
   @override
+  @override
   Widget build(BuildContext context) {
-    if (loading) {
-      return const Center(child: CircularProgressIndicator());
-    }
+    return Scaffold(
+      // ✅ Attach Drawer
+      drawer: const SalesDrawer(currentRoute: '/salesDashboard'),
 
-    return SingleChildScrollView(
-      child: Column(
-        children: [
-          headerUI(),
-          const SizedBox(height: 20),
+      // ✅ Consistent AppBar
+      appBar: AppBar(
+        backgroundColor: AppColors.navy,
+        foregroundColor: Colors.white,
+        title: Text(
+          SalesDrawer.getTitle('/salesDashboard'),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
 
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Column(
-              children: [
-                GridView.count(
-                  crossAxisCount: 2,
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  mainAxisSpacing: 12,
-                  crossAxisSpacing: 12,
-                  childAspectRatio: 1.3,
-                  children: [
-                    kpiCard("Target Sales",
-                        "₹ ${targetSales.toStringAsFixed(0)}",
-                        Icons.flag),
-                    kpiCard("Achieved Sales",
-                        "₹ ${achievedSales.toStringAsFixed(0)}",
-                        Icons.trending_up),
-                    kpiCard("Total Invoices",
-                        totalInvoices.toString(),
-                        Icons.receipt_long),
-                    kpiCard("Paid Invoices",
-                        paidInvoices.toString(),
-                        Icons.check_circle),
-                    kpiCard("Unpaid Invoices",
-                        unpaidInvoices.toString(),
-                        Icons.pending_actions),
-                    kpiCard("Invoice Total",
-                        "₹ ${invoiceTotal.toStringAsFixed(0)}",
-                        Icons.account_balance),
-                  ],
-                ),
+      body: loading
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+        child: Column(
+          children: [
+            headerUI(),
+            const SizedBox(height: 20),
 
-                const SizedBox(height: 25),
-
-                dashboardCard(
-                  title: "Receipt Overview",
-                  child: Column(
+            Padding(
+              padding:
+              const EdgeInsets.symmetric(horizontal: 16),
+              child: Column(
+                children: [
+                  GridView.count(
+                    crossAxisCount: 2,
+                    shrinkWrap: true,
+                    physics:
+                    const NeverScrollableScrollPhysics(),
+                    mainAxisSpacing: 12,
+                    crossAxisSpacing: 12,
+                    childAspectRatio: 1.3,
                     children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _receiptMiniCard(
-                              title: "Target Receipt",
-                              value: targetReceipt,
-                              color: Colors.blue,
-                              icon: Icons.account_balance_wallet,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: _receiptMiniCard(
-                              title: "Achieved Receipt",
-                              value: achievedReceipt,
-                              color: Colors.green,
-                              icon: Icons.payments,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      SizedBox(
-                        height: 200,
-                        child: buildReceiptChart(),
-                      ),
+                      kpiCard(
+                          "Target Sales",
+                          "₹ ${targetSales.toStringAsFixed(0)}",
+                          Icons.flag),
+                      kpiCard(
+                          "Achieved Sales",
+                          "₹ ${achievedSales.toStringAsFixed(0)}",
+                          Icons.trending_up),
+                      kpiCard(
+                          "Total Invoices",
+                          totalInvoices.toString(),
+                          Icons.receipt_long),
+                      kpiCard(
+                          "Paid Invoices",
+                          paidInvoices.toString(),
+                          Icons.check_circle),
+                      kpiCard(
+                          "Unpaid Invoices",
+                          unpaidInvoices.toString(),
+                          Icons.pending_actions),
+                      kpiCard(
+                          "Invoice Total",
+                          "₹ ${invoiceTotal.toStringAsFixed(0)}",
+                          Icons.account_balance),
                     ],
                   ),
-                ),
 
-                const SizedBox(height: 25),
+                  const SizedBox(height: 25),
 
-                dashboardCard(
-                  title: "Monthly Revenue Trend",
-                  child: SizedBox(
-                    height: 220,
-                    child: buildLineChart(),
-                  ),
-                ),
-
-                const SizedBox(height: 25),
-
-                dashboardCard(
-                  title: "Source of Enquiry Analysis",
-                  child: buildEnquirySourceChart(),
-                ),
-
-                const SizedBox(height: 25),
-
-                dashboardCard(
-                  title: "Recent Invoices",
-                  child: Column(
-                    children: recentInvoices.map((inv) {
-                      final date = inv['date'] as DateTime;
-                      return ListTile(
-                        dense: true,
-                        leading: CircleAvatar(
-                          backgroundColor: AppColors.primaryBlue,
-                          child: const Icon(Icons.receipt,
-                              size: 18, color: Colors.white),
+                  dashboardCard(
+                    title: "Receipt Overview",
+                    child: Column(
+                      children: [
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _receiptMiniCard(
+                                title:
+                                "Target Receipt",
+                                value:
+                                targetReceipt,
+                                color: Colors.blue,
+                                icon: Icons
+                                    .account_balance_wallet,
+                              ),
+                            ),
+                            const SizedBox(
+                                width: 12),
+                            Expanded(
+                              child: _receiptMiniCard(
+                                title:
+                                "Achieved Receipt",
+                                value:
+                                achievedReceipt,
+                                color:
+                                Colors.green,
+                                icon:
+                                Icons.payments,
+                              ),
+                            ),
+                          ],
                         ),
-                        title: Text(inv['invoiceNumber']),
-                        subtitle:
-                        Text(DateFormat.yMMMd().format(date)),
-                        trailing: Text(
-                          "₹ ${inv['amount']}",
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold),
+                        const SizedBox(
+                            height: 16),
+                        SizedBox(
+                          height: 200,
+                          child:
+                          buildReceiptChart(),
                         ),
-                      );
-                    }).toList(),
+                      ],
+                    ),
                   ),
-                ),
-              ],
+
+                  const SizedBox(height: 25),
+
+                  dashboardCard(
+                    title:
+                    "Monthly Revenue Trend",
+                    child: SizedBox(
+                      height: 220,
+                      child: buildLineChart(),
+                    ),
+                  ),
+
+                  const SizedBox(height: 25),
+
+                  dashboardCard(
+                    title:
+                    "Source of Enquiry Analysis",
+                    child:
+                    buildEnquirySourceChart(),
+                  ),
+
+                  const SizedBox(height: 25),
+
+                  dashboardCard(
+                    title: "Recent Invoices",
+                    child: Column(
+                      children:
+                      recentInvoices.map(
+                            (inv) {
+                          final date =
+                          inv['date']
+                          as DateTime;
+                          return ListTile(
+                            dense: true,
+                            leading:
+                            CircleAvatar(
+                              backgroundColor:
+                              AppColors
+                                  .primaryBlue,
+                              child: const Icon(
+                                  Icons
+                                      .receipt,
+                                  size: 18,
+                                  color: Colors
+                                      .white),
+                            ),
+                            title: Text(inv[
+                            'invoiceNumber']),
+                            subtitle: Text(
+                              DateFormat
+                                  .yMMMd()
+                                  .format(date),
+                            ),
+                            trailing: Text(
+                              "₹ ${inv['amount']}",
+                              style:
+                              const TextStyle(
+                                  fontWeight:
+                                  FontWeight
+                                      .bold),
+                            ),
+                          );
+                        },
+                      ).toList(),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

@@ -303,30 +303,29 @@ import 'package:intl/intl.dart';
 
 import '../../core/pdf/pdf_utils.dart';
 import '../../core/theme/app_colors.dart';
+import '../shared_widgets/sales_drawer.dart';
 import 'services/invoice_service.dart';
 
 class InvoiceListScreen extends StatefulWidget {
   const InvoiceListScreen({super.key});
 
   @override
-  State<InvoiceListScreen> createState() => _InvoiceListScreenState();
+  State<InvoiceListScreen> createState() =>
+      _InvoiceListScreenState();
 }
 
-class _InvoiceListScreenState extends State<InvoiceListScreen> {
+class _InvoiceListScreenState
+    extends State<InvoiceListScreen> {
   String searchText = "";
   String paymentFilter = "all";
 
-  // ======================
-  // FETCH INVOICES (API)
-  // ======================
+  // ================= FETCH INVOICES =================
 
   Future<List<Map<String, dynamic>>> fetchInvoices() async {
     return await InvoiceService().getInvoices();
   }
 
-  // ======================
-  // FILTER LOGIC
-  // ======================
+  // ================= FILTER LOGIC =================
 
   bool _filterInvoice(Map<String, dynamic> inv) {
     final invoiceNo =
@@ -335,203 +334,178 @@ class _InvoiceListScreenState extends State<InvoiceListScreen> {
         .toLowerCase();
 
     final status =
-    (inv['status'] ?? "pending").toString().toLowerCase();
+    (inv['status'] ?? "pending")
+        .toString()
+        .toLowerCase();
 
-    final bool matchSearch =
+    final matchSearch =
     invoiceNo.contains(searchText.toLowerCase());
 
-    final bool matchPayment =
+    final matchPayment =
         paymentFilter == "all" || status == paymentFilter;
 
     return matchSearch && matchPayment;
   }
 
-  // ======================
-  // UI
-  // ======================
+  // ================= UI =================
 
   @override
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      // appBar: AppBar(
-      //   title: const Text(
-      //     "Invoices",
-      //     style: TextStyle(fontWeight: FontWeight.bold),
-      //   ),
-      //   backgroundColor: AppColors.darkBlue,
-      //   foregroundColor: Colors.white,
-      // ),
+    return Column(
+      children: [
+        // ================= SEARCH + FILTER =================
 
-      body: Column(
-        children: [
-          // ================= SEARCH + FILTER =================
-
-          Padding(
-            padding: const EdgeInsets.all(10),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    decoration: const InputDecoration(
-                      hintText: "Search Invoice",
-                      prefixIcon: Icon(Icons.search),
-                      border: OutlineInputBorder(),
-                    ),
-                    onChanged: (val) {
-                      setState(() => searchText = val.trim());
-                    },
+        Padding(
+          padding: const EdgeInsets.all(10),
+          child: Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  decoration: const InputDecoration(
+                    hintText: "Search Invoice",
+                    prefixIcon: Icon(Icons.search),
+                    border: OutlineInputBorder(),
                   ),
-                ),
-                const SizedBox(width: 10),
-                DropdownButton<String>(
-                  value: paymentFilter,
-                  items: const [
-                    DropdownMenuItem(
-                        value: "all", child: Text("All")),
-                    DropdownMenuItem(
-                        value: "paid", child: Text("Paid")),
-                    DropdownMenuItem(
-                        value: "pending", child: Text("Pending")),
-                  ],
                   onChanged: (val) {
-                    setState(() => paymentFilter = val!);
+                    setState(() => searchText = val.trim());
                   },
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(width: 10),
+              DropdownButton<String>(
+                value: paymentFilter,
+                items: const [
+                  DropdownMenuItem(
+                      value: "all", child: Text("All")),
+                  DropdownMenuItem(
+                      value: "paid", child: Text("Paid")),
+                  DropdownMenuItem(
+                      value: "pending", child: Text("Pending")),
+                ],
+                onChanged: (val) {
+                  setState(() => paymentFilter = val!);
+                },
+              ),
+            ],
           ),
+        ),
 
-          // ================= INVOICE LIST =================
+        // ================= INVOICE LIST =================
 
-          Expanded(
-            child: FutureBuilder<List<Map<String, dynamic>>>(
-              future: fetchInvoices(),
-              builder: (context, snapshot) {
-                if (snapshot.connectionState ==
-                    ConnectionState.waiting) {
-                  return const Center(
-                      child: CircularProgressIndicator());
-                }
+        Expanded(
+          child: FutureBuilder<List<Map<String, dynamic>>>(
+            future: fetchInvoices(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState ==
+                  ConnectionState.waiting) {
+                return const Center(
+                    child: CircularProgressIndicator());
+              }
 
-                if (snapshot.hasError) {
-                  return const Center(
-                      child: Text("Failed to load invoices"));
-                }
+              if (snapshot.hasError) {
+                return const Center(
+                    child: Text("Failed to load invoices"));
+              }
 
-                final invoices =
-                (snapshot.data ?? []).where(_filterInvoice).toList();
+              final invoices =
+              (snapshot.data ?? [])
+                  .where(_filterInvoice)
+                  .toList();
 
-                if (invoices.isEmpty) {
-                  return const Center(
-                      child: Text("No invoices found"));
-                }
+              if (invoices.isEmpty) {
+                return const Center(
+                    child: Text("No invoices found"));
+              }
 
-                return ListView.builder(
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: invoices.length,
-                  itemBuilder: (context, index) {
-                    final inv = invoices[index];
+              return ListView.builder(
+                physics:
+                const BouncingScrollPhysics(),
+                itemCount: invoices.length,
+                itemBuilder: (context, index) {
+                  final inv = invoices[index];
 
-                    final createdAt = inv['createdAt'] != null
-                        ? DateTime.tryParse(inv['createdAt'])
-                        : null;
+                  final createdAt =
+                  inv['createdAt'] != null
+                      ? DateTime.tryParse(
+                      inv['createdAt'])
+                      : null;
 
-                    final date = createdAt != null
-                        ? DateFormat.yMMMd().format(createdAt)
-                        : "-";
+                  final date = createdAt != null
+                      ? DateFormat.yMMMd()
+                      .format(createdAt)
+                      : "-";
 
-                    final invoiceNo =
-                        inv['invoiceNumber'] ?? inv['invoiceId'];
+                  final invoiceNo =
+                      inv['invoiceNumber'] ??
+                          inv['invoiceId'];
 
-                    final pdfUrl = inv['pdfUrl'] ?? "";
+                  final pdfUrl =
+                      inv['pdfUrl'] ?? "";
 
-                    final status =
-                    (inv['status'] ?? "pending").toString().toLowerCase();
+                  final status =
+                  (inv['status'] ??
+                      "pending")
+                      .toString()
+                      .toLowerCase();
 
-                    final amount =
-                        inv['totalAmount'] ?? 0;
+                  final amount =
+                      inv['totalAmount'] ?? 0;
 
-                    return Card(
-                      margin: const EdgeInsets.symmetric(
-                          horizontal: 10, vertical: 6),
-                      child: ListTile(
-                        leading: Icon(
-                          Icons.receipt_long,
-                          color: status == "paid"
-                              ? Colors.green
-                              : Colors.orange,
-                        ),
-
-                        title: Text(
-                          invoiceNo,
-                          style: const TextStyle(
-                              fontWeight: FontWeight.bold),
-                        ),
-
-                        subtitle: Column(
-                          crossAxisAlignment:
-                          CrossAxisAlignment.start,
-                          children: [
-                            Text(date),
-                            const SizedBox(height: 4),
-                            Text(
-                              "₹ $amount • ${status.toUpperCase()}",
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: status == "paid"
-                                    ? Colors.green
-                                    : Colors.orange,
-                              ),
-                            ),
-                          ],
-                        ),
-
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (pdfUrl.isNotEmpty)
-                              IconButton(
-                                icon:
-                                const Icon(Icons.visibility),
-                                onPressed: () {
-                                  PdfUtils.openPdf(pdfUrl);
-                                },
-                              ),
-
-                            if (pdfUrl.isNotEmpty)
-                              IconButton(
-                                icon:
-                                const Icon(Icons.download),
-                                onPressed: () async {
-                                  final path =
-                                  await PdfUtils.downloadPdf(
-                                    url: pdfUrl,
-                                    fileName: invoiceNo,
-                                  );
-
-                                  if (mounted) {
-                                    ScaffoldMessenger.of(context)
-                                        .showSnackBar(
-                                      SnackBar(
-                                        content: Text(
-                                            "Downloaded to $path"),
-                                      ),
-                                    );
-                                  }
-                                },
-                              ),
-                          ],
-                        ),
+                  return Card(
+                    margin:
+                    const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6),
+                    child: ListTile(
+                      leading: Icon(
+                        Icons.receipt_long,
+                        color: status == "paid"
+                            ? Colors.green
+                            : Colors.orange,
                       ),
-                    );
-                  },
-                );
-              },
-            ),
+                      title: Text(
+                        invoiceNo,
+                        style:
+                        const TextStyle(
+                            fontWeight:
+                            FontWeight
+                                .bold),
+                      ),
+                      subtitle: Column(
+                        crossAxisAlignment:
+                        CrossAxisAlignment
+                            .start,
+                        children: [
+                          Text(date),
+                          const SizedBox(
+                              height: 4),
+                          Text(
+                            "₹ $amount • ${status.toUpperCase()}",
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight:
+                              FontWeight
+                                  .bold,
+                              color: status ==
+                                  "paid"
+                                  ? Colors
+                                  .green
+                                  : Colors
+                                  .orange,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  );
+                },
+              );
+            },
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
+
 }

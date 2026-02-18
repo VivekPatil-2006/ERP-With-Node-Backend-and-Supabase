@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 
 import '../../core/theme/app_colors.dart';
 import '../../shared/widgets/loading_indicator.dart';
+import '../shared_widgets/sales_drawer.dart';
 import 'services/services.dart';
 import 'enquiry_details_screen.dart';
 import 'create_enquiry_screen.dart';
@@ -36,16 +37,15 @@ class _SalesEnquiryListScreenState extends State<SalesEnquiryListScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.lightGrey,
+      drawer: const SalesDrawer(currentRoute: '/salesEnquiries'),
 
-      /* ================= APP BAR ================= */
       appBar: AppBar(
-        title: const Text(
-          'Enquiries',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
         backgroundColor: AppColors.navy,
         foregroundColor: Colors.white,
+        title: Text(
+          SalesDrawer.getTitle('/salesEnquiries'),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
       ),
 
       /* ================= FAB (ADD ENQUIRY) ================= */

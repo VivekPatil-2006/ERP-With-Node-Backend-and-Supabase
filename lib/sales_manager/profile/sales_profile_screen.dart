@@ -6,6 +6,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../core/services/cloudinary_service.dart';
 import '../../core/theme/app_colors.dart';
 import '../../../../services/api_service.dart';
+import '../shared_widgets/sales_drawer.dart';
 
 class SalesProfileScreen extends StatefulWidget {
   const SalesProfileScreen({super.key});
@@ -146,6 +147,7 @@ class _SalesProfileScreenState extends State<SalesProfileScreen> {
   // =====================================================
 
   @override
+  @override
   Widget build(BuildContext context) {
     ImageProvider? avatar;
 
@@ -156,11 +158,19 @@ class _SalesProfileScreenState extends State<SalesProfileScreen> {
     }
 
     return Scaffold(
+      // ✅ Attach Drawer
+      drawer: const SalesDrawer(currentRoute: '/salesProfile'),
+
+      // ✅ Consistent AppBar
       appBar: AppBar(
-        title: const Text("My Profile"),
-        backgroundColor: AppColors.darkBlue,
+        backgroundColor: AppColors.navy,
         foregroundColor: Colors.white,
+        title: Text(
+          SalesDrawer.getTitle('/salesProfile'),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
       ),
+
       body: pageLoading
           ? const Center(child: CircularProgressIndicator())
           : SingleChildScrollView(
@@ -177,6 +187,7 @@ class _SalesProfileScreenState extends State<SalesProfileScreen> {
                     : null,
               ),
             ),
+
             const SizedBox(height: 20),
 
             buildField("Name", nameCtrl),
@@ -202,8 +213,7 @@ class _SalesProfileScreenState extends State<SalesProfileScreen> {
               child: ElevatedButton(
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryBlue,
-                  padding:
-                  const EdgeInsets.symmetric(vertical: 14),
+                  padding: const EdgeInsets.symmetric(vertical: 14),
                 ),
                 onPressed: loading ? null : updateProfile,
                 child: loading
@@ -211,7 +221,8 @@ class _SalesProfileScreenState extends State<SalesProfileScreen> {
                     color: Colors.white)
                     : const Text(
                   "UPDATE PROFILE",
-                  style: TextStyle(color: Colors.white),
+                  style:
+                  TextStyle(color: Colors.white),
                 ),
               ),
             ),

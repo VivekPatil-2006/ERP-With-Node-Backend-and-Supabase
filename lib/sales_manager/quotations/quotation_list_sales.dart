@@ -231,6 +231,7 @@
 import 'package:flutter/material.dart';
 
 import '../../core/theme/app_colors.dart';
+import '../shared_widgets/sales_drawer.dart';
 import 'create_quotation_screen.dart';
 import 'services/quotation_service.dart';
 import 'quotation_details_screen.dart';
@@ -261,21 +262,25 @@ class _QuotationListSalesState extends State<QuotationListSales> {
   }
 
   @override
+  @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text(
-          "My Quotations",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: AppColors.darkBlue,
-        foregroundColor: Colors.white,
-      ),
+      // ✅ Attach Drawer
+      drawer: const SalesDrawer(currentRoute: '/salesQuotations'),
 
-      // ================= SEARCH =================
+      // ✅ Dynamic AppBar Title
+      appBar: AppBar(
+        backgroundColor: AppColors.navy,
+        foregroundColor: Colors.white,
+        title: Text(
+          SalesDrawer.getTitle('/salesQuotations'),
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+      ),
 
       body: Column(
         children: [
+          // ================= SEARCH =================
           Padding(
             padding: const EdgeInsets.all(12),
             child: TextField(
@@ -297,7 +302,6 @@ class _QuotationListSalesState extends State<QuotationListSales> {
           ),
 
           // ================= LIST =================
-
           Expanded(
             child: FutureBuilder<List<Map<String, dynamic>>>(
               future: fetchQuotations(),
@@ -334,7 +338,6 @@ class _QuotationListSalesState extends State<QuotationListSales> {
                     final amount =
                         pricing?['totalAmount'] ?? 0;
 
-                    // ---------- SEARCH FILTER ----------
                     if (_searchText.isNotEmpty &&
                         !quotationId
                             .toLowerCase()
@@ -349,12 +352,12 @@ class _QuotationListSalesState extends State<QuotationListSales> {
                       margin:
                       const EdgeInsets.only(bottom: 12),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(14),
+                        borderRadius:
+                        BorderRadius.circular(14),
                       ),
                       child: ListTile(
                         contentPadding:
                         const EdgeInsets.all(16),
-
                         onTap: () {
                           Navigator.push(
                             context,
@@ -366,34 +369,36 @@ class _QuotationListSalesState extends State<QuotationListSales> {
                             ),
                           );
                         },
-
                         title: Text(
                           enquiryTitle.isNotEmpty
                               ? enquiryTitle
                               : "Quotation #$quotationId",
                           maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                          overflow:
+                          TextOverflow.ellipsis,
                           style: const TextStyle(
-                            fontWeight: FontWeight.w600,
+                            fontWeight:
+                            FontWeight.w600,
                           ),
                         ),
-
                         subtitle: Padding(
                           padding:
-                          const EdgeInsets.only(top: 6),
+                          const EdgeInsets.only(
+                              top: 6),
                           child: Column(
                             crossAxisAlignment:
-                            CrossAxisAlignment.start,
+                            CrossAxisAlignment
+                                .start,
                             children: [
                               Text("Amount: ₹ $amount"),
-                              const SizedBox(height: 6),
+                              const SizedBox(
+                                  height: 6),
                               _statusChip(status),
                             ],
                           ),
                         ),
-
-                        trailing:
-                        const Icon(Icons.chevron_right),
+                        trailing: const Icon(
+                            Icons.chevron_right),
                       ),
                     );
                   },
@@ -404,15 +409,17 @@ class _QuotationListSalesState extends State<QuotationListSales> {
         ],
       ),
 
-      // ✅ ADD THIS
+      // ================= FAB =================
       floatingActionButton: FloatingActionButton(
         backgroundColor: AppColors.primaryBlue,
-        child: const Icon(Icons.add, color: Colors.white),
+        child: const Icon(Icons.add,
+            color: Colors.white),
         onPressed: () {
           Navigator.push(
             context,
             MaterialPageRoute(
-              builder: (_) => const CreateQuotationScreen(),
+              builder: (_) =>
+              const CreateQuotationScreen(),
             ),
           );
         },
