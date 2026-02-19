@@ -669,6 +669,8 @@ class _CreateEnquiryScreenState extends State<CreateEnquiryScreen> {
   // STATE
   // ============================
 
+  bool selecting = false;
+
   String? selectedClientId;
   String? selectedProductId;
 
@@ -800,6 +802,8 @@ class _CreateEnquiryScreenState extends State<CreateEnquiryScreen> {
         foregroundColor: Colors.white,
       ),
 
+
+
       bottomNavigationBar: Padding(
         padding: const EdgeInsets.all(12),
         child: ElevatedButton(
@@ -824,11 +828,14 @@ class _CreateEnquiryScreenState extends State<CreateEnquiryScreen> {
         ),
       ),
 
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
+      body: Stack(
           children: [
-            // ================= CLIENT =================
+      SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        children: [
+
+          // ================= CLIENT =================
             buildCard(
               title: "Client Selection",
               icon: Icons.people,
@@ -863,11 +870,18 @@ class _CreateEnquiryScreenState extends State<CreateEnquiryScreen> {
                         ),
                       );
                     }).toList(),
-                    onChanged: (val) {
+                    onChanged: (val) async {
+                      setState(() => selecting = true);
+
+                      await Future.delayed(const Duration(milliseconds: 400));
+
                       selectedClientId = val;
-                      selectedClientData = clients
-                          .firstWhere((c) => c['clientId'] == val);
-                      setState(() {});
+                      selectedClientData =
+                          clients.firstWhere((c) => c['clientId'] == val);
+
+                      if (mounted) {
+                        setState(() => selecting = false);
+                      }
                     },
                   );
                 },
@@ -910,12 +924,20 @@ class _CreateEnquiryScreenState extends State<CreateEnquiryScreen> {
                         child: Text(p['title']),
                       );
                     }).toList(),
-                    onChanged: (val) {
+                    onChanged: (val) async {
+                      setState(() => selecting = true);
+
+                      await Future.delayed(const Duration(milliseconds: 400));
+
                       selectedProductId = val;
-                      selectedProductData = products
-                          .firstWhere((p) => p['productId'] == val);
-                      setState(() {});
+                      selectedProductData =
+                          products.firstWhere((p) => p['productId'] == val);
+
+                      if (mounted) {
+                        setState(() => selecting = false);
+                      }
                     },
+
                   );
                 },
               ),
@@ -987,6 +1009,16 @@ class _CreateEnquiryScreenState extends State<CreateEnquiryScreen> {
             ),
           ],
         ),
+      ),
+            // ✅ LOADER OVERLAY
+            if (selecting)
+              Container(
+                color: Colors.black.withOpacity(0.15),
+                child: const Center(
+                  child: CircularProgressIndicator(),
+                ),
+              ),
+          ],
       ),
     );
   }

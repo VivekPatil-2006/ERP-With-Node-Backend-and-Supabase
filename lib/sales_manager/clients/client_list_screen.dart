@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-import '../../client/profile/client_profile_screen.dart';
+import 'client_profile_screen.dart';
 import '../../core/theme/app_colors.dart';
 import '../shared_widgets/sales_drawer.dart';
 import 'services/client_services.dart';

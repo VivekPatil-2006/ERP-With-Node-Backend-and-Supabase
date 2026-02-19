@@ -87,6 +87,23 @@ class ClientService {
     }).toList();
   }
 
+  Future<void> updateClient({
+    required String clientId,
+    required Map<String, dynamic> data,
+  }) async {
+    // Remove empty fields
+    data.removeWhere(
+          (key, value) => value == null || value.toString().trim().isEmpty,
+    );
+
+    if (data.isEmpty) return;
+
+    await ApiService.patch(
+      '/clients/$clientId',
+      data,
+    );
+  }
+
   /* =======================================================
      🔹 GET SINGLE CLIENT
      GET /api/clients/:id

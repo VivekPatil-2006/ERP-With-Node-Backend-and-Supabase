@@ -4,7 +4,6 @@ import 'package:image_picker/image_picker.dart';
 
 import '../../core/services/cloudinary_service.dart';
 import '../../core/theme/app_colors.dart';
-import '../dashboard/client_dashboard.dart';
 import 'services/client_services.dart';
 
 class ClientProfileScreen extends StatefulWidget {
@@ -31,6 +30,7 @@ class _ClientProfileScreenState
   final Map<String, TextEditingController> controllers = {};
   bool controllersInitialized = false;
 
+  // ================= INIT CONTROLLERS =================
   void initControllers(Map<String, dynamic> data) {
     if (controllersInitialized) return;
 
@@ -59,6 +59,7 @@ class _ClientProfileScreenState
     controllersInitialized = true;
   }
 
+  // ================= PICK IMAGE =================
   Future<void> pickProfileImage() async {
     if (!editMode) return;
 
@@ -72,6 +73,7 @@ class _ClientProfileScreenState
     }
   }
 
+  // ================= UPLOAD IMAGE =================
   Future<String?> uploadProfileImage() async {
     if (selectedImage == null) return null;
 
@@ -88,6 +90,7 @@ class _ClientProfileScreenState
     }
   }
 
+  // ================= SAVE PROFILE =================
   Future<void> saveProfile() async {
     try {
       setState(() => saving = true);
@@ -127,20 +130,22 @@ class _ClientProfileScreenState
     }
   }
 
+  // ================= UI =================
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.lightGrey,
 
-      // ❌ Drawer Removed
-
       appBar: AppBar(
         backgroundColor: AppColors.darkBlue,
         foregroundColor: Colors.white,
 
+        // ✅ BACK BUTTON
         leading: IconButton(
           icon: const Icon(Icons.arrow_back),
-          onPressed: () { Navigator.pushAndRemoveUntil( context, MaterialPageRoute( builder: (_) => const ClientDashboard(), ), (route) => false, ); },
+          onPressed: () {
+            Navigator.pop(context);
+          },
         ),
 
         title: const Text(
@@ -160,7 +165,6 @@ class _ClientProfileScreenState
           ),
         ],
       ),
-
 
       body: FutureBuilder<Map<String, dynamic>>(
         future: ClientService().getClientById(widget.clientId),
@@ -183,6 +187,7 @@ class _ClientProfileScreenState
             padding: const EdgeInsets.all(16),
             child: Column(
               children: [
+                // ================= PROFILE IMAGE =================
                 GestureDetector(
                   onTap: pickProfileImage,
                   child: Stack(
