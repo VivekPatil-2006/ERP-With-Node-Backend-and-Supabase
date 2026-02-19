@@ -161,3 +161,120 @@
 //     return snap.size;
 //   }
 // }
+
+import '../../../services/api_service.dart';
+
+class AdminDashboardService {
+
+  /* =======================================================
+     INTERNAL SAFE PARSER
+     ======================================================= */
+  Map<String, dynamic> _safeMap(dynamic response) {
+    if (response is Map<String, dynamic>) {
+      return response;
+    }
+    return {};
+  }
+
+  List<dynamic> _safeList(dynamic response) {
+    if (response is List) {
+      return List<dynamic>.from(response);
+    }
+    return [];
+  }
+
+  /* =======================================================
+     OVERVIEW KPIs
+     ======================================================= */
+  Future<Map<String, dynamic>> getOverviewKPIs() async {
+    try {
+      final response =
+      await ApiService.get("/admin/dashboard/overview");
+
+      return _safeMap(response);
+    } catch (e) {
+      throw Exception("Failed to fetch overview KPIs");
+    }
+  }
+
+  /* =======================================================
+     STATUS SUMMARY
+     ======================================================= */
+  Future<Map<String, dynamic>> getStatusSummary() async {
+    try {
+      final response =
+      await ApiService.get("/admin/dashboard/status-summary");
+
+      return _safeMap(response);
+    } catch (e) {
+      throw Exception("Failed to fetch status summary");
+    }
+  }
+
+  /* =======================================================
+     MONTHLY REVENUE
+     ======================================================= */
+  Future<List<Map<String, dynamic>>> getMonthlyRevenue({int? year}) async {
+    try {
+      final response = await ApiService.get(
+        "/admin/dashboard/monthly-revenue"
+            "${year != null ? "?year=$year" : ""}",
+      );
+
+      final list = _safeList(response);
+
+      return list
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    } catch (e) {
+      throw Exception("Failed to fetch monthly revenue");
+    }
+  }
+
+  /* =======================================================
+     CONVERSION RATE
+     ======================================================= */
+  Future<Map<String, dynamic>> getConversionRate() async {
+    try {
+      final response =
+      await ApiService.get("/admin/dashboard/conversion-rate");
+
+      return _safeMap(response);
+    } catch (e) {
+      throw Exception("Failed to fetch conversion rate");
+    }
+  }
+
+  /* =======================================================
+     TOP SALES MANAGERS
+     ======================================================= */
+  Future<List<Map<String, dynamic>>> getTopSalesManagers(
+      {int limit = 5}) async {
+    try {
+      final response = await ApiService.get(
+          "/admin/dashboard/top-sales-managers?limit=$limit");
+
+      final list = _safeList(response);
+
+      return list
+          .map((e) => Map<String, dynamic>.from(e))
+          .toList();
+    } catch (e) {
+      throw Exception("Failed to fetch top sales managers");
+    }
+  }
+
+  /* =======================================================
+     RECENT ACTIVITY
+     ======================================================= */
+  Future<Map<String, dynamic>> getRecentActivity() async {
+    try {
+      final response =
+      await ApiService.get("/admin/dashboard/recent-activity");
+
+      return _safeMap(response);
+    } catch (e) {
+      throw Exception("Failed to fetch recent activity");
+    }
+  }
+}

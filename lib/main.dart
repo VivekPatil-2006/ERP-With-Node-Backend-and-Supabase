@@ -78,10 +78,10 @@ class DealTrackApp extends StatelessWidget {
         '/login': (_) => const AdminLoginScreen(),
         '/register': (_) => const AdminRegisterScreen(),
 
-        // ================= ADMIN =================
-        // '/adminDashboard': (_) => const AdminAuthGuard(
-        //   child: AdminDashboardScreen(),
-        // ),
+        //================= ADMIN =================
+        '/adminDashboard': (_) => const AdminAuthGuard(
+          child: AdminDashboardScreen(),
+        ),
 
         '/listPlanningManager': (_) => const AdminAuthGuard(
           child: PlanningManagerListScreen(),
