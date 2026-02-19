@@ -21,14 +21,14 @@ class PlanningManagerService {
         "phone": m["phone"],
         "department": m["department"],
         "status": m["status"],
+        "profileImage": m["profileImage"],
+        "details": m["details"],
       };
     }).toList();
   }
 
   /* =====================================================
      🔹 CREATE
-     POST /planning-managers/create
-     + SEND PASSWORD RESET EMAIL
   ===================================================== */
   Future<void> createPlanningManager({
     required Map<String, dynamic> body,
@@ -38,8 +38,9 @@ class PlanningManagerService {
       body,
     );
 
-    // 🔥 Send reset email
-    await _auth.sendPasswordResetEmail(email: body["email"]);
+    await _auth.sendPasswordResetEmail(
+      email: body["email"],
+    );
   }
 
   /* =====================================================
@@ -50,17 +51,29 @@ class PlanningManagerService {
     final response =
     await ApiService.get("/planning-managers/$planningManagerId");
 
-    return response["planningManager"];
+    final m = response["planningManager"];
+
+    return {
+      "planningManagerId": m["planningManagerId"],
+      "name": m["name"],
+      "email": m["email"],
+      "phone": m["phone"],
+      "department": m["department"],
+      "status": m["status"],
+      "profileImage": m["profileImage"],
+      "companyName": m["company_name"],
+      "details": m["details"],
+    };
   }
 
   /* =====================================================
-     🔹 UPDATE
+     🔹 UPDATE (Use PATCH instead of PUT)
   ===================================================== */
   Future<void> updatePlanningManager({
     required String planningManagerId,
     required Map<String, dynamic> body,
   }) async {
-    await ApiService.post(
+    await ApiService.patch(
       "/planning-managers/$planningManagerId",
       body,
     );
@@ -73,11 +86,21 @@ class PlanningManagerService {
     required String planningManagerId,
     required bool activate,
   }) async {
-    await ApiService.post(
+    await ApiService.patch(
       "/planning-managers/$planningManagerId",
       {
         "status": activate ? "active" : "inactive",
       },
+    );
+  }
+
+  /* =====================================================
+     🔹 DELETE
+  ===================================================== */
+  Future<void> deletePlanningManager(
+      String planningManagerId) async {
+    await ApiService.delete(
+      "/planning-managers/$planningManagerId",
     );
   }
 }

@@ -60,15 +60,15 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
       // 4️⃣ ROUTE BASED NAVIGATION
       switch (role) {
         case 'admin':
-          Navigator.pushReplacementNamed(context, '/clients');
+          Navigator.pushReplacementNamed(context, '/adminDashboard');
           break;
 
         case 'sales_manager':
-          Navigator.pushReplacementNamed(context, '/salesEnquiries');
+          Navigator.pushReplacementNamed(context, '/salesDashboard');
           break;
 
         case 'client':
-          Navigator.pushReplacementNamed(context, '/clientEnquiries');
+          Navigator.pushReplacementNamed(context, '/clientDashboard');
           break;
 
         default:

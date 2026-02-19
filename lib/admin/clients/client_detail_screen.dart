@@ -122,6 +122,8 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
   // ================= UI =================
 
   Widget _profileCard(Map<String, dynamic> c) {
+    final String? imageUrl = c['profileImage'];
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -137,10 +139,20 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
       child: Column(
         children: [
           CircleAvatar(
-            radius: 42,
-            backgroundColor: AppColors.primaryBlue.withOpacity(0.15),
-            child: const Icon(Icons.business,
-                size: 42, color: AppColors.primaryBlue),
+            radius: 45,
+            backgroundColor:
+            AppColors.primaryBlue.withOpacity(0.15),
+            backgroundImage: imageUrl != null &&
+                imageUrl.isNotEmpty
+                ? NetworkImage(imageUrl)
+                : null,
+            child: imageUrl == null || imageUrl.isEmpty
+                ? const Icon(
+              Icons.person,
+              size: 42,
+              color: AppColors.primaryBlue,
+            )
+                : null,
           ),
           const SizedBox(height: 14),
           Text(
@@ -152,12 +164,15 @@ class _ClientDetailScreenState extends State<ClientDetailScreen> {
             ),
           ),
           const SizedBox(height: 6),
-          Text(c['emailAddress'] ?? '',
-              style: const TextStyle(color: Colors.grey)),
+          Text(
+            c['emailAddress'] ?? '',
+            style: const TextStyle(color: Colors.grey),
+          ),
         ],
       ),
     );
   }
+
 
   Widget _section(String title, List<Widget> rows) {
     return Container(

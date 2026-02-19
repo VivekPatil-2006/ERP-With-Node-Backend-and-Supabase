@@ -6,7 +6,6 @@ class SalesManagerService {
 
   /* =======================================================
      🔹 GET SALES MANAGERS
-     GET /api/sales-managers
      ======================================================= */
   Future<List<Map<String, dynamic>>> getSalesManagers() async {
     final response = await ApiService.get("/sales-managers");
@@ -19,6 +18,7 @@ class SalesManagerService {
         "name": m["name"],
         "email": m["email"],
         "phone": m["phone"],
+        "profileImage": m["profileImage"], // ✅ added
         "status": m["status"],
       };
     }).toList();
@@ -26,8 +26,6 @@ class SalesManagerService {
 
   /* =======================================================
      🔹 CREATE SALES MANAGER
-     POST /api/sales-managers
-     + SEND PASSWORD RESET EMAIL
      ======================================================= */
   Future<void> createSalesManager({
     required String name,
@@ -41,7 +39,6 @@ class SalesManagerService {
     String? state,
     String? postcode,
   }) async {
-    // 1️⃣ Backend creates Firebase user + Supabase rows
     await ApiService.post(
       "/sales-managers",
       {
@@ -58,16 +55,15 @@ class SalesManagerService {
       },
     );
 
-    // 2️⃣ Send password reset email
     await _auth.sendPasswordResetEmail(email: email);
   }
 
   /* =======================================================
      🔹 GET SINGLE SALES MANAGER
-     GET /api/sales-managers/:id
      ======================================================= */
   Future<Map<String, dynamic>> getSalesManagerById(String managerId) async {
-    final response = await ApiService.get("/sales-managers/$managerId");
+    final response =
+    await ApiService.get("/sales-managers/$managerId");
 
     final m = response["salesManager"];
 
@@ -78,20 +74,20 @@ class SalesManagerService {
       "phone": m["phone"],
       "dob": m["dob"],
       "gender": m["gender"],
+      "profileImage": m["profileImage"], // ✅ added
       "addressLine1": m["addressLine1"],
       "addressLine2": m["addressLine2"],
       "city": m["city"],
       "state": m["state"],
       "postcode": m["postcode"],
       "status": m["status"],
-      "salesTarget": m["sales_target"] ?? 0,   // ✅ ADD THIS
+      "salesTarget": m["sales_target"] ?? 0,
     };
   }
 
   /* =======================================================
-   🔹 UPDATE SALES TARGET
-   PATCH /api/sales-managers/:id
-   ======================================================= */
+     🔹 UPDATE SALES TARGET
+     ======================================================= */
   Future<void> updateSalesTarget({
     required String managerId,
     required int target,
@@ -104,10 +100,8 @@ class SalesManagerService {
     );
   }
 
-
   /* =======================================================
      🔹 ACTIVATE / DEACTIVATE
-     PATCH /api/sales-managers/:id/status
      ======================================================= */
   Future<void> toggleStatus({
     required String managerId,

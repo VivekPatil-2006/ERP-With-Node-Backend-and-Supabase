@@ -144,7 +144,7 @@ class StatusSummarySection extends StatelessWidget {
             title,
             style: const TextStyle(
               fontWeight: FontWeight.bold,
-              fontSize: 15,
+              fontSize: 17,
             ),
           ),
           const SizedBox(height: 4),
@@ -152,7 +152,7 @@ class StatusSummarySection extends StatelessWidget {
           Text(
             subtitle,
             style: TextStyle(
-              fontSize: 12,
+              fontSize: 13,
               color: Colors.grey.shade600,
             ),
           ),
@@ -215,7 +215,7 @@ class StatusSummarySection extends StatelessWidget {
                     Text(
                       "${entry.key} (${entry.value})",
                       style: const TextStyle(
-                        fontSize: 19,
+                        fontSize: 15,
                       ),
                     ),
                   ],
