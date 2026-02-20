@@ -39,6 +39,12 @@ import 'client/payments/client_payment_screen.dart';
 import 'client/payments/list_client_payments_screen.dart';
 import 'client/profile/client_profile_screen.dart';
 
+// ================= PLANNING MANAGER =================
+import 'planning_manager/products/planning_manager_products_list_screen.dart';
+import 'planning_manager/profile/planning_manager_profile_screen.dart';
+import 'planning_manager/work_order/work_orders_screen.dart';
+import 'planning_manager/work_order/list_work_orders.dart';
+
 // ================= CORE =================
 import 'core/guards/admin_auth_guard.dart';
 
@@ -134,6 +140,19 @@ class DealTrackApp extends StatelessWidget {
         '/clientPayments': (_) => const ClientPaymentScreen(),
         '/clientInvoices': (_) => const ClientInvoiceListScreen(),
         '/clientDashboard': (_) => const ClientDashboard(),
+
+        // ================= PLANNING MANAGER =================
+        '/planning_manager/products': (_) =>
+        const PlanningProductListScreen(),
+
+        '/planning_manager/profile': (_) =>
+        const PlanningManagerProfileScreen(),
+
+        '/planning_manager/createWorkOrders': (_) =>
+        const WorkOrdersScreen(),
+
+        '/planning_manager/listWorkOrders': (_) =>
+        const ListWorkOrdersScreen(),
 
 
         // ❗ Cannot be const because UID is runtime

@@ -58,6 +58,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
       }
 
       // 4️⃣ ROUTE BASED NAVIGATION
+      // 4️⃣ ROUTE BASED NAVIGATION
       switch (role) {
         case 'admin':
           Navigator.pushReplacementNamed(context, '/adminDashboard');
@@ -69,6 +70,13 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
 
         case 'client':
           Navigator.pushReplacementNamed(context, '/clientDashboard');
+          break;
+
+        case 'planning_manager':
+          Navigator.pushReplacementNamed(
+            context,
+            '/planning_manager/products',
+          );
           break;
 
         default:

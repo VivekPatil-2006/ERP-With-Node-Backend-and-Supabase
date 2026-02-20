@@ -5,8 +5,8 @@ import 'package:firebase_auth/firebase_auth.dart';
 class ApiService {
   // 🔁 Change this when deploying
   //static const String baseUrl = "https://j3rpjd6r-8000.inc1.devtunnels.ms/api";
-  static const String baseUrl = "https://40z5ghj1-8000.inc1.devtunnels.ms/api";
-  //static const String baseUrl = "http://192.168.0.102:8000/api";
+  //static const String baseUrl = "https://40z5ghj1-8000.inc1.devtunnels.ms/api";
+  static const String baseUrl = "http://192.168.0.102:8000/api";
 
   /* =======================================================
      🔐 Get Firebase ID Token (PRIVATE ROUTES)
@@ -62,6 +62,28 @@ class ApiService {
   //   _handleError(response);
   //   return jsonDecode(response.body);
   // }
+
+  /* =======================================================
+   ✏️ PUT (PRIVATE)
+======================================================= */
+  static Future<Map<String, dynamic>> put(
+      String path,
+      Map<String, dynamic> body,
+      ) async {
+    final token = await _getIdToken();
+
+    final response = await http.put(
+      Uri.parse("$baseUrl$path"),
+      headers: {
+        "Content-Type": "application/json",
+        "Authorization": "Bearer $token",
+      },
+      body: jsonEncode(body),
+    );
+
+    _handleError(response);
+    return jsonDecode(response.body);
+  }
 
   static Future<dynamic> get(String path) async {
     final token = await _getIdToken();
